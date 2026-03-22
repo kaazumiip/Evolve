@@ -3,9 +3,10 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const db = require('./db');
 
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://10.220.185.8:5000/api/auth/google/callback"
+    clientID: (process.env.GOOGLE_CLIENT_ID || "").trim(),
+    clientSecret: (process.env.GOOGLE_CLIENT_SECRET || "").trim(),
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback",
+    scope: ['profile', 'email']
 },
     async function (accessToken, refreshToken, profile, done) {
         try {
@@ -19,10 +20,10 @@ passport.use(new GoogleStrategy({
                 const email = profile.emails[0].value;
                 const googleId = profile.id;
 
-                // Create new user
+                // Create new user (setting is_password_set to 0 for social users)
                 const [result] = await db.execute(
-                    'INSERT INTO users (name, email, google_id) VALUES (?, ?, ?)',
-                    [name, email, googleId]
+                    'INSERT INTO users (name, email, google_id, is_password_set) VALUES (?, ?, ?, ?)',
+                    [name, email, googleId, 0]
                 );
 
                 // Return user object without extra SELECT
