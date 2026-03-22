@@ -1,0 +1,4 @@
+--- USERS INDEXES ---
+PRIMARY: id (Unique)
+--- OTPS INDEXES ---
+PRIMARY: id (Unique)

@@ -575,5 +575,14 @@
   "passwordHint": "Enter current password",
   "retypePasswordHint": "Retype new password",
   "min6CharsHint": "Min. 6 characters",
-  "currentPasswordHint": "Enter current password"
+  "currentPasswordHint": "Enter current password",
+  "favoritesTitle": "Favorites",
+  "tabAll": "All",
+  "tabScholarships": "Scholarships",
+  "tabPosts": "Posts",
+  "noFavoritesYet": "No favorites saved yet.",
+  "noSavedScholarships": "No saved scholarships.",
+  "noSavedPosts": "No saved posts.",
+  "variesLabel": "Varies",
+  "openLabel": "Open"
 }

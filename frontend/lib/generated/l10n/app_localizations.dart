@@ -3195,6 +3195,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter current password'**
   String get currentPasswordHint;
+
+  /// No description provided for @favoritesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get favoritesTitle;
+
+  /// No description provided for @tabAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tabAll;
+
+  /// No description provided for @tabScholarships.
+  ///
+  /// In en, this message translates to:
+  /// **'Scholarships'**
+  String get tabScholarships;
+
+  /// No description provided for @tabPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Posts'**
+  String get tabPosts;
+
+  /// No description provided for @noFavoritesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No favorites saved yet.'**
+  String get noFavoritesYet;
+
+  /// No description provided for @noSavedScholarships.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved scholarships.'**
+  String get noSavedScholarships;
+
+  /// No description provided for @noSavedPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved posts.'**
+  String get noSavedPosts;
+
+  /// No description provided for @variesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Varies'**
+  String get variesLabel;
+
+  /// No description provided for @openLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openLabel;
 }
 
 class _AppLocalizationsDelegate

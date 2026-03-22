@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/api_service.dart';
 import 'scholarship_detail_screen.dart';
 import '../community/post_detail_screen.dart';
+import '../../generated/l10n/app_localizations.dart';
 
 Color kPrimaryBlue(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF6366F1) : const Color(0xFF2563EB);
 
@@ -64,7 +65,7 @@ class _FavoritesTabState extends State<FavoritesTab> with SingleTickerProviderSt
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Favorites',
+                    AppLocalizations.of(context)!.favoritesTitle,
                     style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -93,10 +94,10 @@ class _FavoritesTabState extends State<FavoritesTab> with SingleTickerProviderSt
               indicatorWeight: 3,
               labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
               unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 14),
-              tabs: const [
-                Tab(text: 'All'),
-                Tab(text: 'Scholarships'),
-                Tab(text: 'Posts'),
+              tabs: [
+                Tab(text: AppLocalizations.of(context)!.tabAll),
+                Tab(text: AppLocalizations.of(context)!.tabScholarships),
+                Tab(text: AppLocalizations.of(context)!.tabPosts),
               ],
             ),
 
@@ -122,7 +123,7 @@ class _FavoritesTabState extends State<FavoritesTab> with SingleTickerProviderSt
   }
 
   Widget _buildAllList() {
-    if (_favorites.isEmpty) return _buildEmptyState('No favorites saved yet.');
+    if (_favorites.isEmpty) return _buildEmptyState(AppLocalizations.of(context)!.noFavoritesYet);
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
       itemCount: _favorites.length,
@@ -138,7 +139,7 @@ class _FavoritesTabState extends State<FavoritesTab> with SingleTickerProviderSt
   }
 
   Widget _buildScholarshipList() {
-    if (_scholarships.isEmpty) return _buildEmptyState('No saved scholarships.');
+    if (_scholarships.isEmpty) return _buildEmptyState(AppLocalizations.of(context)!.noSavedScholarships);
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
       itemCount: _scholarships.length,
@@ -150,7 +151,7 @@ class _FavoritesTabState extends State<FavoritesTab> with SingleTickerProviderSt
   }
 
   Widget _buildPostList() {
-    if (_posts.isEmpty) return _buildEmptyState('No saved posts.');
+    if (_posts.isEmpty) return _buildEmptyState(AppLocalizations.of(context)!.noSavedPosts);
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
       itemCount: _posts.length,
@@ -268,11 +269,11 @@ class _FavoritesTabState extends State<FavoritesTab> with SingleTickerProviderSt
                 children: [
                   Icon(Icons.monetization_on_outlined, size: 20, color: Colors.grey.shade600),
                   const SizedBox(width: 8),
-                  Text(s['amount'] ?? 'Varies', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                  Text(s['amount'] ?? AppLocalizations.of(context)!.variesLabel, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                   const Spacer(),
                   Icon(Icons.calendar_today_outlined, size: 20, color: Colors.grey.shade600),
                   const SizedBox(width: 8),
-                  Text(s['deadline'] ?? 'Open', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                  Text(s['deadline'] ?? AppLocalizations.of(context)!.openLabel, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),

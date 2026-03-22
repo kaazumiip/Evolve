@@ -1697,4 +1697,32 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get currentPasswordHint => 'សូមបញ្ចូលពាក្យសម្ងាត់បច្ចុប្បន្ន';
+
+  @override
+  String get favoritesTitle => 'សំណព្វចិត្ត';
+
+  @override
+  String get tabAll => 'ទាំងអស់';
+
+  @override
+  String get tabScholarships => 'អាហារូបករណ៍';
+
+  @override
+  String get tabPosts => 'ការបង្ហោះ';
+
+  @override
+  String get noFavoritesYet => 'មិនទាន់មានសំណព្វចិត្តដែលបានរក្សាទុកនៅឡើយទេ។';
+
+  @override
+  String get noSavedScholarships =>
+      'មិនទាន់មានអាហារូបករណ៍ដែលបានរក្សាទុកនៅឡើយទេ។';
+
+  @override
+  String get noSavedPosts => 'មិនទាន់មានការបង្ហោះដែលបានរក្សាទុកនៅឡើយទេ។';
+
+  @override
+  String get variesLabel => 'ផ្សេងៗ';
+
+  @override
+  String get openLabel => 'បើក';
 }

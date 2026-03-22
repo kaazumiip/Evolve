@@ -97,12 +97,7 @@ module.exports = {
       const pool = await getPool();
       const translatedQuery = translateDialect(query);
       
-      const sanitizedParams = params.map(p => {
-        if (typeof p === 'string' && /^\d+$/.test(p)) {
-          return Number(p);
-        }
-        return p;
-      });
+      const sanitizedParams = params;
 
       // USE query() instead of execute() for LIMIT/OFFSET
       // MySQL Prepared Statements (execute) can be restrictive with LIMIT parameters
@@ -139,12 +134,7 @@ module.exports = {
       rollback: () => connection.rollback(),
       execute: async (query, params = []) => {
         const translatedQuery = translateDialect(query);
-        const sanitizedParams = params.map(p => {
-          if (typeof p === 'string' && /^\d+$/.test(p)) {
-            return Number(p);
-          }
-          return p;
-        });
+        const sanitizedParams = params;
 
         // Use query() for LIMIT in transactions too
         if (translatedQuery.toUpperCase().includes('LIMIT')) {

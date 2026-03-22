@@ -1688,4 +1688,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get currentPasswordHint => 'Enter current password';
+
+  @override
+  String get favoritesTitle => 'Favorites';
+
+  @override
+  String get tabAll => 'All';
+
+  @override
+  String get tabScholarships => 'Scholarships';
+
+  @override
+  String get tabPosts => 'Posts';
+
+  @override
+  String get noFavoritesYet => 'No favorites saved yet.';
+
+  @override
+  String get noSavedScholarships => 'No saved scholarships.';
+
+  @override
+  String get noSavedPosts => 'No saved posts.';
+
+  @override
+  String get variesLabel => 'Varies';
+
+  @override
+  String get openLabel => 'Open';
 }
