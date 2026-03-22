@@ -72,15 +72,13 @@ exports.sendOTP = async (req, res) => {
 
     try {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-
         // Delete old OTPs for this email/type
         await db.execute('DELETE FROM otps WHERE email = ? AND type = ?', [email, type]);
 
-        // Insert new OTP
+        // Insert new OTP (Letting the database calculate expiration to avoid timezone issues)
         await db.execute(
-            'INSERT INTO otps (email, otp, type, expires_at) VALUES (?, ?, ?, ?)',
-            [email, otp, type, expiresAt]
+            'INSERT INTO otps (email, otp, type, expires_at) VALUES (?, ?, ?, DATE_ADD(SYSUTCDATETIME(), INTERVAL 10 MINUTE))',
+            [email, otp, type]
         );
         console.log(`Stored OTP ${otp} for ${email} with type ${type}`);
 
@@ -137,8 +135,8 @@ exports.forgotPassword = async (req, res) => {
 
         await db.execute('DELETE FROM otps WHERE email = ? AND type = ?', [email, 'password_reset']);
         await db.execute(
-            'INSERT INTO otps (email, otp, type, expires_at) VALUES (?, ?, ?, ?)',
-            [email, otp, 'password_reset', expiresAt]
+            'INSERT INTO otps (email, otp, type, expires_at) VALUES (?, ?, ?, DATE_ADD(SYSUTCDATETIME(), INTERVAL 10 MINUTE))',
+            [email, otp, 'password_reset']
         );
 
         const mailResult = await mailService.sendOTP(email, otp, 'password_reset');
