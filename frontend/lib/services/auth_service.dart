@@ -51,7 +51,9 @@ class AuthService {
     }
   }
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '743869151112-k64n63b3p3vdslkp6luepood87t97og8.apps.googleusercontent.com',
+  );
 
   Future<Map<String, dynamic>> signInWithGoogle() async {
     try {

@@ -613,7 +613,7 @@ exports.changePassword = async (req, res) => {
         if (otp) {
             console.log('Verifying Change Password OTP for:', user.email);
             const [otpRows] = await db.execute(
-                'SELECT * FROM otps WHERE email = ? AND otp = ? AND (type = ? OR type = ? OR type = ?) AND expires_at > SYSUTCDATETIME()',
+                'SELECT * FROM otps WHERE email = ? AND otp = ? AND (type = ? OR type = ? OR type = ?) AND expires_at > UTC_TIMESTAMP()',
                 [user.email, otp, 'password_reset', 'password_change', 'registration']
             );
 

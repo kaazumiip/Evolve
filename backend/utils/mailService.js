@@ -1,13 +1,18 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Create a transporter using Gmail SMTP
+// Create a transporter using Gmail SMTP with explicit host and better timeouts for cloud environments
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Use SSL
   auth: {
-    user: process.env.SMTP_USER, // Your Gmail address
-    pass: process.env.SMTP_PASS, // Your 16-character App Password
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 5000,
+  socketTimeout: 10000,
 });
 
 /**
