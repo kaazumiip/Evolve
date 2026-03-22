@@ -18,8 +18,8 @@ class ApiService {
   static const String _usbHost = '127.0.0.1';    // Use when connected via USB (adb reverse tcp:5000 tcp:5000)
 
 
-  static const String baseUrl = 'http://192.168.1.5:5000/api/'; 
-  // static const String baseUrl = 'http://127.0.0.1:5000/api/'; // Works via adb reverse tcp:5000 tcp:5000
+  static const String baseUrl = 'https://evolve-rv6a.onrender.com/api/'; 
+  // static const String baseUrl = 'http://192.168.1.5:5000/api/'; 
 
   
   final Dio _dio = Dio(

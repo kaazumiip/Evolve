@@ -161,6 +161,11 @@ io.on('connection', (socket) => {
     });
 });
 
+// Health Check for Render (Keep-Alive)
+app.get('/health', (req, res) => {
+    res.status(200).send('Server is alive and breathing');
+});
+
 // Test Route
 app.get('/', (req, res) => {
     res.send('API is running...');
