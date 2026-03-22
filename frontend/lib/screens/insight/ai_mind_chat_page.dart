@@ -22,7 +22,6 @@ class _AIMindChatPageState extends State<AIMindChatPage> {
   final List<Map<String, dynamic>> _messages = [];
 
   bool _isLoading = false;
-  final String _openRouterApiKey = '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';
   final ScrollController _scrollController = ScrollController();
   String _currentPlan = 'Free Access';
   int _messageCount = 0;
@@ -177,16 +176,10 @@ class _AIMindChatPageState extends State<AIMindChatPage> {
         });
       }
 
-      final response = await dio.post(
-        'https://openrouter.ai/api/v1/chat/completions',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $_openRouterApiKey',
-            'Content-Type': 'application/json',
-          },
-        ),
+      final apiService = ApiService();
+      final response = await apiService.dio.post(
+        'ai/chat',
         data: {
-          "model": "google/gemini-2.0-flash-001",
           "messages": chatHistory,
           "max_tokens": maxResponseTokens,
         },

@@ -16,6 +16,7 @@ const favoritesRoutes = require('./routes/favoritesRoutes');
 const careerRoutes = require('./routes/careerRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const stickerRoutes = require('./routes/stickerRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 require('./config/passport'); // Import passport configuration
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/favorites', favoritesRoutes);
 app.use('/api/careers', careerRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/stickers', stickerRoutes);
+app.use('/api/ai', aiRoutes);
 
 const db = require('./config/db');
 

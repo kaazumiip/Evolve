@@ -11,10 +11,7 @@ class ApiService {
     isDarkMode = false;
   }
 
-  // --- DEVICE HOST CONFIGURATION ---
-  static const String _localhost = '127.0.0.1';   // Use for Windows/Web/Desktop
-  static const String _emulatorHost = '10.0.2.2'; // Standard Android Emulator host
-  static const String _wifiHost = '172.21.0.211';   // Your current Wi-Fi IP (from ipconfig)
+
   static const String _usbHost = '127.0.0.1';    // Use when connected via USB (adb reverse tcp:5000 tcp:5000)
 
 

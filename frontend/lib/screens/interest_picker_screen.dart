@@ -276,7 +276,6 @@ class _InterestPickerScreenState extends State<InterestPickerScreen> {
     List<SubInterest> availableSubs = [];
     if (_updateStep == 1) {
        availableSubs = interests
-        .where((i) => _selectedInterests.contains(i.id))
         .expand((i) => i.subs)
         .toList();
     }
