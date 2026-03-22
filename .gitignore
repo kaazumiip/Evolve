@@ -1,0 +1,23 @@
+# --- ANDROID / FLUTTER ---
+android/
+build/
+.gradle/
+app/build/
+captures/
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+
+# --- BACKEND ---
+node_modules/
+.env
+dist/
