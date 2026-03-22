@@ -23,7 +23,7 @@ passport.use(new GoogleStrategy({
 
                 // Create new user (setting is_password_set to 0 for social users)
                 const [result] = await db.execute(
-                    'INSERT INTO users (name, email, google_id, is_password_set) VALUES (?, ?, ?, ?)',
+                    'INSERT INTO users (name, email, google_id, is_password_set, last_seen) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
                     [name, email, googleId, 0]
                 );
 
