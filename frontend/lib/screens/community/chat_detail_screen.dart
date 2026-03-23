@@ -794,6 +794,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       );
     } else if (videoFile != null) {
       await _sendRichMessage(
+        type: 'video',
+        content: content,
+        mediaFile: videoFile,
+        replyToId: replyId,
+      );
+    } else if (content.isNotEmpty) {
+      await _sendRichMessage(
         type: 'text',
         content: content,
         replyToId: replyId,
@@ -1741,7 +1748,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   String _formatTime(String? isoString) {
     if (isoString == null) return '';
     try {
-      final date = DateTime.parse(isoString).toLocal();
+      var dateStr = isoString;
+      // The backend saves +7 time natively, but Node sends it as UTC ending in 'Z'.
+      // Strip 'Z' to parse it as local time and prevent double shifting.
+      if (dateStr.endsWith('Z')) {
+        dateStr = dateStr.substring(0, dateStr.length - 1);
+      }
+      final date = DateTime.parse(dateStr);
       return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return '';
