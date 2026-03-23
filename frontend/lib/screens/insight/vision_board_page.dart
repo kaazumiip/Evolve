@@ -655,7 +655,7 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                                 _isDragging = true;
                               });
                             },
-                            dragEndIndex: (index) {
+                            onDragEnd: (index) {
                               setState(() {
                                 _isDragging = false;
                                 _isOverDelete = false;
@@ -672,17 +672,17 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                             bottom: 30,
                             left: 0,
                             right: 0,
-                            child: DragTarget<ReorderableEntityData>(
-                              onWillAcceptWithDetails: (details) {
+                            child: DragTarget<ReorderableEntity>(
+                              onWillAccept: (data) {
                                 setState(() => _isOverDelete = true);
                                 return true;
                               },
-                              onLeave: (details) {
+                              onLeave: (data) {
                                 setState(() => _isOverDelete = false);
                               },
-                              onAcceptWithDetails: (details) {
+                              onAccept: (ReorderableEntity data) {
                                 // Find the item by id from the entity
-                                final String draggedId = (details.data.key as ValueKey).value;
+                                final String draggedId = (data.key as ValueKey).value;
                                 setState(() {
                                   _items.removeWhere((item) => item.id == draggedId);
                                   _isDragging = false;
