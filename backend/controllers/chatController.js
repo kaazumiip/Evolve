@@ -34,7 +34,12 @@ exports.getConversations = async (req, res) => {
                     SELECT m.type FROM messages m 
                     WHERE m.conversation_id = c.id 
                     ORDER BY m.created_at DESC LIMIT 1
-                ) as lastMessageType
+                ) as lastMessageType,
+                (
+                    SELECT m.media_gallery FROM messages m 
+                    WHERE m.conversation_id = c.id 
+                    ORDER BY m.created_at DESC LIMIT 1
+                ) as lastMediaGallery
             FROM conversations c
             JOIN conversation_participants cp_me ON c.id = cp_me.conversation_id
             JOIN conversation_participants cp_other ON c.id = cp_other.conversation_id
@@ -120,7 +125,7 @@ exports.getMessages = async (req, res) => {
     try {
         const [messages] = await db.execute(`
             SELECT 
-                m.id, m.conversation_id, m.sender_id, m.content, m.image_url, m.created_at, m.is_read, m.type, m.media_url, m.reply_to_id, m.is_edited, m.deleted_at,
+                m.id, m.conversation_id, m.sender_id, m.content, m.image_url, m.created_at, m.is_read, m.type, m.media_url, m.reply_to_id, m.is_edited, m.deleted_at, m.media_gallery,
                 u.name as senderName, 
                 u.profile_picture as senderImage, 
                 rm.content as replyToContent,
@@ -148,7 +153,7 @@ exports.getMessages = async (req, res) => {
 // Send a message
 exports.sendMessage = async (req, res) => {
     const conversationId = req.params.id;
-    const { content, image_url, media_url, type, reply_to_id } = req.body;
+    const { content, image_url, media_url, type, reply_to_id, media_gallery } = req.body;
     const userId = req.user.id;
 
     try {
@@ -183,8 +188,8 @@ exports.sendMessage = async (req, res) => {
         }
 
         const [result] = await db.execute(
-            'INSERT INTO messages (conversation_id, sender_id, content, image_url, media_url, type, reply_to_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [conversationId, userId, content || null, image_url || null, media_url || null, type || 'text', reply_to_id || null]
+            'INSERT INTO messages (conversation_id, sender_id, content, image_url, media_url, type, reply_to_id, media_gallery) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [conversationId, userId, content || null, image_url || null, media_url || null, type || 'text', reply_to_id || null, media_gallery ? JSON.stringify(media_gallery) : null]
         );
 
         await db.execute('UPDATE conversations SET updated_at = NOW() WHERE id = ?', [conversationId]);
@@ -193,7 +198,7 @@ exports.sendMessage = async (req, res) => {
 
         const [msg] = await db.execute(`
             SELECT 
-                m.id, m.conversation_id, m.sender_id, m.content, m.image_url, m.created_at, m.is_read, m.type, m.media_url, m.reply_to_id, m.is_edited, m.deleted_at,
+                m.id, m.conversation_id, m.sender_id, m.content, m.image_url, m.created_at, m.is_read, m.type, m.media_url, m.reply_to_id, m.is_edited, m.deleted_at, m.media_gallery,
                 u.name as senderName, 
                 u.profile_picture as senderImage,
                 rm.content as replyToContent,

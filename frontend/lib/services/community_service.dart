@@ -147,7 +147,7 @@ class CommunityService {
     }
   }
 
-  Future<Map<String, dynamic>> sendMessage(int conversationId, String content, {String? imageUrl, String? mediaUrl, String? type, int? replyToId}) async {
+  Future<Map<String, dynamic>> sendMessage(int conversationId, String content, {String? imageUrl, String? mediaUrl, String? type, int? replyToId, List<String>? mediaGallery}) async {
     try {
       final response = await _api.dio.post('/chat/conversations/$conversationId/messages', data: {
         'content': content,
@@ -155,6 +155,7 @@ class CommunityService {
         'media_url': mediaUrl,
         'type': type ?? 'text',
         'reply_to_id': replyToId,
+        'media_gallery': mediaGallery,
       });
       return response.data;
     } catch (e) {

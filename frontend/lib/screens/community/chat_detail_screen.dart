@@ -477,7 +477,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   // Removed unused Giphy methods as they are in CommentMediaPicker now
 
-  Future<void> _sendRichMessage({String type = 'text', String? content, File? mediaFile, String? mediaUrl, int? replyToId}) async {
+  Future<void> _sendRichMessage({String type = 'text', String? content, File? mediaFile, String? mediaUrl, List<String>? mediaGallery, int? replyToId}) async {
     setState(() => _isSending = true);
     
     final optimisticId = DateTime.now().millisecondsSinceEpoch;
@@ -486,7 +486,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       'content': content,
       'senderName': 'Me',
       'type': type,
-      'media_url': mediaFile?.path ?? mediaUrl,
+      'media_url': mediaFile?.path ?? mediaUrl ?? (mediaGallery != null && mediaGallery.isNotEmpty ? mediaGallery[0] : null),
+      'media_gallery': mediaGallery,
       'sender_id': _currentUserId ?? 0,
       'created_at': DateTime.now().toIso8601String(),
       'isOptimistic': true, 
@@ -502,6 +503,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     try {
       String? finalMediaUrl = mediaUrl;
+      
       if (mediaFile != null) {
         final result = await _communityService.uploadMedia(mediaFile);
         finalMediaUrl = result['url'];
@@ -513,6 +515,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         mediaUrl: finalMediaUrl,
         type: type,
         replyToId: replyToId,
+        mediaGallery: mediaGallery,
       );
 
       _socketService.sendMessage(widget.conversationId, newMessage);
@@ -772,30 +775,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _selectedVideo = null;
     });
 
-    if (videoFile != null) {
-      await _sendRichMessage(
-        type: 'video',
-        content: content,
-        mediaFile: videoFile,
-        replyToId: replyId,
-      );
-    } else if (imageFiles.isNotEmpty) {
-      // Send first image with content
+    if (imageFiles.isNotEmpty) {
+      setState(() => _isSending = true);
+      
+      // Upload all images
+      List<String> uploadedUrls = [];
+      for (var file in imageFiles) {
+        final res = await _communityService.uploadMedia(file);
+        uploadedUrls.add(res['url']);
+      }
+
       await _sendRichMessage(
         type: 'image',
         content: content,
-        mediaFile: imageFiles[0],
+        mediaGallery: uploadedUrls,
         replyToId: replyId,
       );
-      // Send subsequent images
-      for (int i = 1; i < imageFiles.length; i++) {
-        await _sendRichMessage(
-          type: 'image',
-          content: '',
-          mediaFile: imageFiles[i],
-        );
-      }
-    } else {
+    } else if (videoFile != null) {
       await _sendRichMessage(
         type: 'text',
         content: content,
@@ -1369,8 +1365,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                else if (content != null)
                  Text(content, style: const TextStyle(fontSize: 80)),
             ],
-            if (isImage)
-              _buildImageContent(mediaUrl!),
+            if (isImage) ...[
+               if (message['media_gallery'] != null)
+                 _buildImageGallery(message['media_gallery'])
+               else
+                 _buildImageContent(mediaUrl!),
+            ],
             if (type == 'video' && mediaUrl != null)
                _buildVideoContent(mediaUrl),
             if (type == 'file' && mediaUrl != null)
@@ -1450,14 +1450,50 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildImageContent(String url) {
+  Widget _buildImageGallery(dynamic galleryData) {
+    List<String> urls = [];
+    if (galleryData is List) {
+      urls = List<String>.from(galleryData);
+    } else if (galleryData is String) {
+      try {
+        urls = List<String>.from(jsonDecode(galleryData));
+      } catch (_) {}
+    }
+
+    if (urls.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 250,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: urls.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
+            itemBuilder: (context, index) => _buildImageContent(urls[index], width: 200),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            "${urls.length} images",
+            style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageContent(String url, {double? width}) {
     return GestureDetector(
       onTap: () => _showFullScreenImage(url),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.7,
+            maxWidth: width ?? MediaQuery.of(context).size.width * 0.7,
             maxHeight: 350,
           ),
           child: Image.network(
@@ -1466,7 +1502,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
               return Container(
-                width: 280,
+                width: width ?? 280,
                 height: 200,
                 color: Colors.grey.shade100,
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(kPrimaryBlue(context)))),

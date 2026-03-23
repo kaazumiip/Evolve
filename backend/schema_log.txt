@@ -1,4 +1,13 @@
---- USERS INDEXES ---
-PRIMARY: id (Unique)
---- OTPS INDEXES ---
-PRIMARY: id (Unique)
+--- MESSAGES COLUMNS ---
+id: int
+conversation_id: int
+sender_id: int
+content: longtext
+image_url: varchar(1000)
+created_at: timestamp
+is_read: tinyint(1)
+type: varchar(255)
+media_url: varchar(1000)
+reply_to_id: int
+is_edited: tinyint
+deleted_at: datetime
