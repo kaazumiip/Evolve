@@ -49,10 +49,6 @@ class _AddJournalPageState extends State<AddJournalPage> {
     final content = contentController.text.trim();
 
     print("=== SAVE BUTTON CLICKED ===");
-    print("Title: $title");
-    print("Content: $content");
-    print("Mood: $selectedMood");
-
     if (title.isEmpty || content.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -71,31 +67,21 @@ class _AddJournalPageState extends State<AddJournalPage> {
 
     try {
       final date = DateFormat('MMM dd').format(DateTime.now());
-      print("Date formatted: $date");
-
       if (_isEditing && widget.entryToEdit != null) {
-        print("=== UPDATING EXISTING ENTRY ===");
         final updatedEntry = widget.entryToEdit!.copyWith(
           title: title,
           content: content,
           mood: selectedMood,
         );
-        print("Updated entry: ${updatedEntry.toMap()}");
-
         await DBHelper.instance.updateEntry(updatedEntry);
-        print("Entry updated successfully!");
       } else {
-        print("=== CREATING NEW ENTRY ===");
         final entry = JournalEntry(
           title: title,
           content: content,
           mood: selectedMood,
           date: date,
         );
-        print("New entry: ${entry.toMap()}");
-
-        final id = await DBHelper.instance.insertEntry(entry);
-        print("Entry saved successfully with ID: $id");
+        await DBHelper.instance.insertEntry(entry);
       }
 
       if (mounted) {
@@ -108,19 +94,10 @@ class _AddJournalPageState extends State<AddJournalPage> {
             duration: const Duration(seconds: 2),
           ),
         );
-
-        // Wait a moment for the user to see the success message
         await Future.delayed(const Duration(milliseconds: 500));
-
-        // Go back and tell the previous page to refresh
-        if (mounted) {
-          Navigator.pop(context, true);
-        }
+        if (mounted) Navigator.pop(context, true);
       }
     } catch (e) {
-      print("=== ERROR SAVING ENTRY ===");
-      print("Error: $e");
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -143,9 +120,9 @@ class _AddJournalPageState extends State<AddJournalPage> {
 
   Widget moodButton(String mood, IconData icon) {
     final isSelected = selectedMood == mood;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
-        print("Mood selected: $mood");
         setState(() => selectedMood = mood);
       },
       child: Column(
@@ -154,10 +131,10 @@ class _AddJournalPageState extends State<AddJournalPage> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF215AE2) : Colors.white,
+              color: isSelected ? const Color(0xFF215AE2) : (isDark ? const Color(0xFF334155) : Colors.white),
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? const Color(0xFF215AE2) : Colors.grey.shade300,
+                color: isSelected ? const Color(0xFF215AE2) : (isDark ? Colors.white12 : Colors.grey.shade300),
                 width: 2,
               ),
             ),
@@ -173,7 +150,7 @@ class _AddJournalPageState extends State<AddJournalPage> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isSelected ? const Color(0xFF215AE2) : Colors.grey[700],
+              color: isSelected ? const Color(0xFF215AE2) : (isDark ? Colors.white70 : Colors.grey[700]),
             ),
           ),
         ],
@@ -194,35 +171,38 @@ class _AddJournalPageState extends State<AddJournalPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtitleColor = isDark ? Colors.white60 : Colors.grey[600];
+    final inputBgColor = isDark ? const Color(0xFF334155) : const Color(0xFFE6F1FF);
+    final hintColor = isDark ? Colors.white30 : const Color(0xFF8AABCC);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          children: [
-            Text(
-              _isEditing ? AppLocalizations.of(context)!.editReflection : AppLocalizations.of(context)!.myDailyReflection,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        title: Text(
+          _isEditing ? AppLocalizations.of(context)!.editReflection : AppLocalizations.of(context)!.myDailyReflection,
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: 16),
             child: Center(
               child: Text(
                 DateFormat('EEEE, d MMMM').format(DateTime.now()),
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: isDark ? Colors.white54 : Colors.grey[600],
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -237,16 +217,15 @@ class _AddJournalPageState extends State<AddJournalPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Mood Selection Section
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -257,10 +236,10 @@ class _AddJournalPageState extends State<AddJournalPage> {
                   children: [
                     Text(
                       AppLocalizations.of(context)!.howAreYouFeelingToday,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
-                        color: Colors.black87,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -277,19 +256,16 @@ class _AddJournalPageState extends State<AddJournalPage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Journal Entry Section
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -300,10 +276,10 @@ class _AddJournalPageState extends State<AddJournalPage> {
                   children: [
                     Text(
                       AppLocalizations.of(context)!.journalEntry,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
-                        color: Colors.black87,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -311,45 +287,37 @@ class _AddJournalPageState extends State<AddJournalPage> {
                       AppLocalizations.of(context)!.journalEntrySubtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[600],
+                        color: subtitleColor,
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Title Field
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE6F1FF),
+                        color: inputBgColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextField(
                         controller: titleController,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
-                          color: Colors.black87,
+                          color: textColor,
                         ),
                         decoration: InputDecoration(
                           hintText: AppLocalizations.of(context)!.title,
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF8AABCC),
+                          hintStyle: TextStyle(
+                            color: hintColor,
                             fontSize: 16,
                           ),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
-                    // Content Field
                     Container(
                       height: 350,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE6F1FF),
+                        color: inputBgColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Stack(
@@ -359,19 +327,19 @@ class _AddJournalPageState extends State<AddJournalPage> {
                             maxLines: null,
                             expands: true,
                             textAlignVertical: TextAlignVertical.top,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
-                              color: Colors.black87,
+                              color: textColor,
                               height: 1.5,
                             ),
                             decoration: InputDecoration(
                               hintText: AppLocalizations.of(context)!.startWritingYourThoughts,
-                              hintStyle: const TextStyle(
-                                color: Color(0xFF8AABCC),
+                              hintStyle: TextStyle(
+                                color: hintColor,
                                 fontSize: 15,
                               ),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.all(16),
+                              contentPadding: const EdgeInsets.all(16),
                             ),
                           ),
                           Positioned(
@@ -380,7 +348,7 @@ class _AddJournalPageState extends State<AddJournalPage> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark ? const Color(0xFF475569) : Colors.white,
                                 borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
@@ -393,7 +361,7 @@ class _AddJournalPageState extends State<AddJournalPage> {
                               child: Icon(
                                 Icons.edit,
                                 size: 18,
-                                color: Colors.grey[600],
+                                color: isDark ? Colors.white70 : Colors.grey[600],
                               ),
                             ),
                           ),
@@ -403,10 +371,7 @@ class _AddJournalPageState extends State<AddJournalPage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Save Button
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -424,24 +389,16 @@ class _AddJournalPageState extends State<AddJournalPage> {
                   ),
                   child: _isSaving
                       ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
                       : Text(
-                    _isEditing ? AppLocalizations.of(context)!.updateReflection : AppLocalizations.of(context)!.saveReflection,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+                          _isEditing ? AppLocalizations.of(context)!.updateReflection : AppLocalizations.of(context)!.saveReflection,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                        ),
                 ),
               ),
-
               const SizedBox(height: 20),
             ],
           ),
