@@ -253,6 +253,16 @@ class ApiService {
     }
   }
 
+  Future<bool> deleteConversation(int conversationId) async {
+    try {
+      await _dio.delete('chat/conversations/$conversationId');
+      return true;
+    } catch (e) {
+      print('Delete Conversation Error: $e');
+      return false;
+    }
+  }
+
   Future<List<dynamic>> searchUsers(String query) async {
     try {
       // Assuming a generic user search endpoint exists or searching by query params

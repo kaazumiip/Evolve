@@ -321,3 +321,31 @@ exports.handleStrangerChat = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// Delete entire conversation
+exports.deleteConversation = async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    try {
+        // Only allow if user is a participant
+        const [participant] = await db.execute(
+            'SELECT * FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+            [id, userId]
+        );
+
+        if (participant.length === 0) {
+            return res.status(401).json({ msg: 'Unauthorized' });
+        }
+
+        // We could do a soft delete, but for now full deletion of history for everyone in this 1-on-1 chat
+        await db.execute('DELETE FROM messages WHERE conversation_id = ?', [id]);
+        await db.execute('DELETE FROM conversation_participants WHERE conversation_id = ?', [id]);
+        await db.execute('DELETE FROM conversations WHERE id = ?', [id]);
+
+        res.json({ msg: 'Conversation deleted successfully' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};

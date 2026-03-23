@@ -157,10 +157,38 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(_showArchived ? Icons.chat_rounded : Icons.archive_outlined, color: kPrimaryBlue(context)),
-            onPressed: () => setState(() => _showArchived = !_showArchived),
-            tooltip: _showArchived ? "Back to Chats" : "Archived Chats",
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: _conversationsFuture,
+            builder: (context, snapshot) {
+              final allChats = snapshot.data ?? [];
+              final archiveCount = allChats.where((c) => c['status'] == 'archived' && c['archived_by'] == _socketService.currentUserId).length;
+              
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(_showArchived ? Icons.chat_rounded : Icons.archive_outlined, color: kPrimaryBlue(context)),
+                    onPressed: () => setState(() => _showArchived = !_showArchived),
+                    tooltip: _showArchived ? "Back to Chats" : "Archived Chats",
+                  ),
+                  if (!_showArchived && archiveCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        child: Text(
+                          '$archiveCount',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(width: 8),
         ],
@@ -306,6 +334,9 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
+                    onLongPress: () {
+                      _showDeleteChatConfirmDialog(chat);
+                    },
                     onTap: () async {
                       if (chat['status'] == 'archived' && chat['archived_by'] == _socketService.currentUserId) {
                         _showStrangerActionDialog(chat);
@@ -528,6 +559,41 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
     } catch (e) {
       return '';
     }
+  }
+
+  void _showDeleteChatConfirmDialog(Map<String, dynamic> chat) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Delete Chat", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text("Are you sure you want to delete this conversation? All messages will be permanently removed for you.", style: GoogleFonts.outfit()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.outfit(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await _apiService.deleteConversation(chat['id']);
+              if (success && mounted) {
+                _refreshConversations();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Chat deleted successfully")),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
   }
 
   bool _isUserOnline(Map<String, dynamic> chat) {

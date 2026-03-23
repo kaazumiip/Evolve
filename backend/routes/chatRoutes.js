@@ -38,4 +38,9 @@ router.delete('/messages/:id', auth, chatController.deleteMessage);
 // @access  Private
 router.post('/handle-stranger', auth, chatController.handleStrangerChat);
 
+// @route   DELETE api/chat/conversations/:id
+// @desc    Delete a conversation
+// @access  Private
+router.delete('/conversations/:id', auth, chatController.deleteConversation);
+
 module.exports = router;
