@@ -3,17 +3,21 @@ require('dotenv').config();
 
 // Create a transporter using Gmail SMTP
 // Create a transporter using Gmail SMTP with explicit port settings
+// Literal IPv4 for smtp.gmail.com to bypass Railway dual-stack DNS bugs
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: '74.125.136.108', // smtp.gmail.com IPv4
   port: 587,
   secure: false, // upgrade to secure via STARTTLS
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  connectionTimeout: 10000, // 10s
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
+  tls: {
+    servername: 'smtp.gmail.com' // CRITICAL for SSL verification when using IP host
+  },
+  connectionTimeout: 15000, 
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 /**
