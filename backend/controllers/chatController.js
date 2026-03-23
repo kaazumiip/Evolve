@@ -83,7 +83,7 @@ exports.startConversation = async (req, res) => {
             );
             
             if (isFriend.length > 0) {
-                await db.execute('UPDATE conversations SET status = "active", archived_by = NULL WHERE id = ?', [conversationId]);
+                await db.execute("UPDATE conversations SET status = 'active', archived_by = NULL WHERE id = ?", [conversationId]);
             }
             
             return res.json({ conversationId });
@@ -309,7 +309,7 @@ exports.handleStrangerChat = async (req, res) => {
     try {
         if (action === 'accept') {
             await db.execute(
-                'UPDATE conversations SET status = "active", archived_by = NULL WHERE id = ? AND archived_by = ?',
+                "UPDATE conversations SET status = 'active', archived_by = NULL WHERE id = ? AND archived_by = ?",
                 [conversationId, userId]
             );
             res.json({ msg: 'Chat accepted' });
