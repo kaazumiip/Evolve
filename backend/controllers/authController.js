@@ -21,7 +21,7 @@ exports.register = async (req, res) => {
     try {
         // Verify OTP
         const [otpRows] = await db.execute(
-            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > UTC_TIMESTAMP()',
+            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > SYSUTCDATETIME()',
             [email, otp, 'registration']
         );
 
@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const [result] = await db.execute(
-            'INSERT INTO users (name, email, password, is_password_set, last_seen) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
+            'INSERT INTO users (name, email, password, is_password_set) VALUES (?, ?, ?, ?)',
             [name, email, hashedPassword, 1]
         );
 
@@ -72,13 +72,15 @@ exports.sendOTP = async (req, res) => {
 
     try {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
         // Delete old OTPs for this email/type
         await db.execute('DELETE FROM otps WHERE email = ? AND type = ?', [email, type]);
 
-        // Insert new OTP (Letting the database calculate expiration to avoid timezone issues)
+        // Insert new OTP
         await db.execute(
-            'INSERT INTO otps (email, otp, type, expires_at) VALUES (?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 MINUTE))',
-            [email, otp, type]
+            'INSERT INTO otps (email, otp, type, expires_at) VALUES (?, ?, ?, ?)',
+            [email, otp, type, expiresAt]
         );
         console.log(`Stored OTP ${otp} for ${email} with type ${type}`);
 
@@ -105,7 +107,7 @@ exports.verifyOTP = async (req, res) => {
 
     try {
         const [rows] = await db.execute(
-            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > UTC_TIMESTAMP()',
+            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > SYSUTCDATETIME()',
             [email, otp, type]
         );
 
@@ -135,8 +137,8 @@ exports.forgotPassword = async (req, res) => {
 
         await db.execute('DELETE FROM otps WHERE email = ? AND type = ?', [email, 'password_reset']);
         await db.execute(
-            'INSERT INTO otps (email, otp, type, expires_at) VALUES (?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 MINUTE))',
-            [email, otp, 'password_reset']
+            'INSERT INTO otps (email, otp, type, expires_at) VALUES (?, ?, ?, ?)',
+            [email, otp, 'password_reset', expiresAt]
         );
 
         const mailResult = await mailService.sendOTP(email, otp, 'password_reset');
@@ -158,7 +160,7 @@ exports.resetPassword = async (req, res) => {
 
     try {
         const [otpRows] = await db.execute(
-            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > UTC_TIMESTAMP()',
+            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > SYSUTCDATETIME()',
             [email, otp, 'password_reset']
         );
 
@@ -302,7 +304,7 @@ exports.googleNativeLogin = async (req, res) => {
             const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
             const [result] = await db.execute(
-                'INSERT INTO users (name, email, password, google_id, is_password_set, last_seen) VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())',
+                'INSERT INTO users (name, email, password, google_id, is_password_set) VALUES (?, ?, ?, ?, ?)',
                 [name, email, hashedPassword, googleId, 0]
             );
             user = { id: result.insertId, name, email, is_password_set: 0 };
@@ -339,7 +341,7 @@ exports.googleNativeLogin = async (req, res) => {
         });
     } catch (err) {
         console.error('Google Native Login Error:', err.message);
-        res.status(401).json({ msg: err.message });
+        res.status(401).json({ msg: 'Invalid Token' });
     }
 };
 
@@ -373,7 +375,7 @@ exports.facebookLogin = async (req, res) => {
             const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
             const [result] = await db.execute(
-                'INSERT INTO users (name, email, password, facebook_id, is_password_set, last_seen) VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())',
+                'INSERT INTO users (name, email, password, facebook_id, is_password_set) VALUES (?, ?, ?, ?, ?)',
                 [name, email, hashedPassword, facebookId, 0]
             );
             user = { id: result.insertId, name, email, is_password_set: 0 };
@@ -613,7 +615,7 @@ exports.changePassword = async (req, res) => {
         if (otp) {
             console.log('Verifying Change Password OTP for:', user.email);
             const [otpRows] = await db.execute(
-                'SELECT * FROM otps WHERE email = ? AND otp = ? AND (type = ? OR type = ? OR type = ?) AND expires_at > UTC_TIMESTAMP()',
+                'SELECT * FROM otps WHERE email = ? AND otp = ? AND (type = ? OR type = ? OR type = ?) AND expires_at > SYSUTCDATETIME()',
                 [user.email, otp, 'password_reset', 'password_change', 'registration']
             );
 

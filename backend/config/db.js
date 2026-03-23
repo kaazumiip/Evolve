@@ -1,11 +1,5 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
-const dns = require('dns');
-
-// Force IPv4 DNS resolution for newer Node.js versions (fixes Railway ENOTFOUND issues)
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder('ipv4first');
-}
 
 const config = {
   host: process.env.DB_HOST,
@@ -22,10 +16,7 @@ const config = {
   timezone: '+07:00' // Ensure MySQL dates match local time (+07:00)
 };
 
-// Use config object primarily (Restores compatibility with Render separate vars)
-const poolConnectionConfig = config;
-
-const pool = mysql.createPool(poolConnectionConfig);
+const pool = mysql.createPool(config);
 
 // Add a connection initialization to set timezone forcefully for each session
 pool.on('connection', (connection) => {
@@ -69,27 +60,23 @@ function translateDialect(query) {
  * Handle Database Creation for Aiven
  */
 async function ensureDatabaseExists() {
+  // Create a temporary connection without a database name specified
+  const connection = await mysql.createConnection({
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    password: config.password,
+    ssl: config.ssl
+  });
+
   try {
-    // If using DATABASE_URL, don't attempt manual DB creation as it's handled by URI
-    if (process.env.DATABASE_URL) {
-       console.log("Using DATABASE_URL, skipping manual DB creation check.");
-       return;
-    }
-
-    const connection = await mysql.createConnection({
-      host: config.host,
-      port: config.port,
-      user: config.user,
-      password: config.password,
-      ssl: config.ssl
-    });
-
     console.log(`Checking if database '${config.database}' exists...`);
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${config.database}\``);
     console.log(`Database '${config.database}' is ready!`);
-    await connection.end();
   } catch (err) {
     console.warn(`Could not verify/create database: ${err.message}`);
+  } finally {
+    await connection.end();
   }
 }
 
@@ -100,7 +87,7 @@ async function getPool() {
   if (poolInstance) return poolInstance;
   
   await ensureDatabaseExists();
-  poolInstance = mysql.createPool(poolConnectionConfig);
+  poolInstance = mysql.createPool(config);
   return poolInstance;
 }
 
