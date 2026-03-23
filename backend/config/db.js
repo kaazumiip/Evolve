@@ -16,7 +16,10 @@ const config = {
   timezone: '+07:00' // Ensure MySQL dates match local time (+07:00)
 };
 
-const pool = mysql.createPool(config);
+// Use full DATABASE_URL if available (solves Railway DNS / IPv6 issues)
+const pool = process.env.DATABASE_URL 
+  ? mysql.createPool(process.env.DATABASE_URL) 
+  : mysql.createPool(config);
 
 // Add a connection initialization to set timezone forcefully for each session
 pool.on('connection', (connection) => {
