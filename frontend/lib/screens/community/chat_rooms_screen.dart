@@ -564,34 +564,80 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
   void _showDeleteChatConfirmDialog(Map<String, dynamic> chat) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text("Delete Chat", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text("Are you sure you want to delete this conversation? All messages will be permanently removed for you.", style: GoogleFonts.outfit()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.outfit(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final success = await _apiService.deleteConversation(chat['id']);
-              if (success && mounted) {
-                _refreshConversations();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Chat deleted successfully")),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      builder: (context) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+              ],
             ),
-            child: const Text("Delete"),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 32),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  "Delete Chat",
+                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1E293B)),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Are you sure you want to delete this conversation? This action will permanently remove all messages for you and cannot be undone.",
+                  style: GoogleFonts.outfit(color: Colors.grey, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(AppLocalizations.of(context)!.cancel, style: GoogleFonts.outfit(color: Colors.grey, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          final success = await _apiService.deleteConversation(chat['id']);
+                          if (success && mounted) {
+                            _refreshConversations();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Chat deleted successfully")),
+                            );
+                          }
+                        },
+                        child: Text("Delete", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
