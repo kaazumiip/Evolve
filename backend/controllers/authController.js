@@ -21,7 +21,7 @@ exports.register = async (req, res) => {
     try {
         // Verify OTP
         const [otpRows] = await db.execute(
-            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > SYSUTCDATETIME()',
+            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > NOW()',
             [email, otp, 'registration']
         );
 
@@ -107,7 +107,7 @@ exports.verifyOTP = async (req, res) => {
 
     try {
         const [rows] = await db.execute(
-            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > SYSUTCDATETIME()',
+            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > NOW()',
             [email, otp, type]
         );
 
@@ -160,7 +160,7 @@ exports.resetPassword = async (req, res) => {
 
     try {
         const [otpRows] = await db.execute(
-            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > SYSUTCDATETIME()',
+            'SELECT * FROM otps WHERE email = ? AND otp = ? AND type = ? AND expires_at > NOW()',
             [email, otp, 'password_reset']
         );
 
@@ -615,7 +615,7 @@ exports.changePassword = async (req, res) => {
         if (otp) {
             console.log('Verifying Change Password OTP for:', user.email);
             const [otpRows] = await db.execute(
-                'SELECT * FROM otps WHERE email = ? AND otp = ? AND (type = ? OR type = ? OR type = ?) AND expires_at > SYSUTCDATETIME()',
+                'SELECT * FROM otps WHERE email = ? AND otp = ? AND (type = ? OR type = ? OR type = ?) AND expires_at > NOW()',
                 [user.email, otp, 'password_reset', 'password_change', 'registration']
             );
 
