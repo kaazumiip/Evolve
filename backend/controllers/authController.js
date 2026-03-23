@@ -185,10 +185,13 @@ const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const updateStreak = async (user) => {
-    // 1. Helper for consistent local date string (YYYY-MM-DD at +07:00)
+    // 1. Helper for consistent local date string (YYYY-MM-DD)
     const formatLocalDate = (date) => {
-        const local = new Date(date.getTime() + (7 * 60 * 60 * 1000));
-        return local.toISOString().split('T')[0];
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
     const todayStr = formatLocalDate(new Date());
@@ -216,7 +219,7 @@ const updateStreak = async (user) => {
         
         const thisWeekLogins = [...new Set(weeklyRows.map(row => {
             const d = new Date(row.login_date);
-            return (d.getDay() + 6) % 7;
+            return (d.getDay() + 6) % 7; // Mon=0, Tue=1, ..., Sun=6
         }))];
 
         return {
@@ -272,7 +275,7 @@ const updateStreak = async (user) => {
 
     const thisWeekLogins = [...new Set(weeklyRows.map(row => {
         const d = new Date(row.login_date);
-        return (d.getDay() + 6) % 7; // Monday = 0
+        return (d.getDay() + 6) % 7; // Mon=0, Tue=1, ..., Sun=6
     }))];
 
     return { currentStreak, longestStreak, thisWeekLogins };
