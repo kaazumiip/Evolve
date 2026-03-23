@@ -258,9 +258,15 @@ exports.searchUsers = async (req, res) => {
         const [users] = await db.execute(`
             SELECT id, name, email, profile_picture 
             FROM users 
-            WHERE (name LIKE ? OR email LIKE ?) AND id != ?
+            WHERE (name LIKE ? OR email LIKE ?) 
+              AND id != ?
+              AND id NOT IN (
+                  SELECT blocker_id FROM user_blocks WHERE blocked_id = ?
+                  UNION
+                  SELECT blocked_id FROM user_blocks WHERE blocker_id = ?
+              )
             LIMIT 20
-        `, [`%${query}%`, `%${query}%`, currentUserId]);
+        `, [`%${query}%`, `%${query}%`, currentUserId, currentUserId, currentUserId]);
 
         res.json(users);
     } catch (err) {

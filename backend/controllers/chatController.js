@@ -13,16 +13,16 @@ exports.getConversations = async (req, res) => {
                 (
                     SELECT m.content FROM messages m 
                     WHERE m.conversation_id = c.id 
-                    ORDER BY m.created_at DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY
+                    ORDER BY m.created_at DESC LIMIT 1
                 ) as lastMessage,
                 (
                     SELECT m.created_at FROM messages m 
                     WHERE m.conversation_id = c.id 
-                    ORDER BY m.created_at DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY
+                    ORDER BY m.created_at DESC LIMIT 1
                 ) as lastMessageTime,
                 (
                     SELECT COUNT(*) FROM messages m 
-                    WHERE m.conversation_id = c.id AND m.is_read = 0 AND m.sender_id != ?
+                    WHERE m.conversation_id = c.id AND m.is_read = 0 AND m.sender_id != cp_me.user_id
                 ) as unreadCount,
                 u.id as otherUserId,
                 u.name as otherUserName,
@@ -39,14 +39,14 @@ exports.getConversations = async (req, res) => {
             JOIN conversation_participants cp_me ON c.id = cp_me.conversation_id
             JOIN conversation_participants cp_other ON c.id = cp_other.conversation_id
             JOIN users u ON cp_other.user_id = u.id
-            WHERE cp_me.user_id = ? AND cp_other.user_id != ?
+            WHERE cp_me.user_id = ? AND cp_other.user_id != cp_me.user_id
               AND NOT EXISTS (
                   SELECT 1 FROM user_blocks 
-                  WHERE (blocker_id = ? AND blocked_id = u.id) 
-                     OR (blocker_id = u.id AND blocked_id = ?)
+                  WHERE (blocker_id = cp_me.user_id AND blocked_id = u.id) 
+                     OR (blocker_id = u.id AND blocked_id = cp_me.user_id)
               )
             ORDER BY c.updated_at DESC
-        `, [req.user.id, req.user.id, req.user.id, req.user.id, req.user.id]);
+        `, [req.user.id]);
 
         res.json(conversations);
     } catch (err) {
@@ -71,16 +71,28 @@ exports.startConversation = async (req, res) => {
         `, [userId, targetUserId]);
 
         if (existing.length > 0) {
-            return res.json({ conversationId: existing[0].id });
+            const conversationId = existing[0].id;
+            // If it exists but is archived, check if they are friends now
+            const [isFriend] = await db.execute(
+                'SELECT * FROM friendships WHERE (requester_id = ? AND receiver_id = ? AND status = "accepted") OR (requester_id = ? AND receiver_id = ? AND status = "accepted")',
+                [userId, targetUserId, targetUserId, userId]
+            );
+            
+            if (isFriend.length > 0) {
+                await db.execute('UPDATE conversations SET status = "active", archived_by = NULL WHERE id = ?', [conversationId]);
+            }
+            
+            return res.json({ conversationId });
         }
 
-        // Check if they are friends
+        // Check if they are friends for new conversation
         const [isFriend] = await db.execute(
             'SELECT * FROM friendships WHERE (requester_id = ? AND receiver_id = ? AND status = "accepted") OR (requester_id = ? AND receiver_id = ? AND status = "accepted")',
             [userId, targetUserId, targetUserId, userId]
         );
 
         const status = isFriend.length > 0 ? 'active' : 'archived';
+        // If not friends, the RECEIVER sees it as archived
         const archivedBy = isFriend.length > 0 ? null : targetUserId;
 
         // Create new conversation
@@ -155,6 +167,19 @@ exports.sendMessage = async (req, res) => {
             if (isBlocked.length > 0) {
                 return res.status(403).json({ msg: "Cannot message blocked user", blocked: true });
             }
+        }
+
+        // 2. Stranger/Archived Check
+        const [conv] = await db.execute(
+            'SELECT status, archived_by FROM conversations WHERE id = ?',
+            [conversationId]
+        );
+
+        if (conv.length > 0 && conv[0].status === 'archived' && conv[0].archived_by === userId) {
+            return res.status(403).json({ 
+                msg: "Please accept the message request before replying", 
+                isArchived: true 
+            });
         }
 
         const [result] = await db.execute(
