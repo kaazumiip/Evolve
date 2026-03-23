@@ -231,7 +231,8 @@ exports.sendMessage = async (req, res) => {
                     },
                     data: {
                         conversationId: conversationId.toString(),
-                        senderId: req.user.id.toString(),
+                        senderId: req.user.id.toString(), // The person who sent the message
+                        senderName: finalMsg.senderName || 'Someone',
                         type: 'chat',
                         imageUrl: finalMsg.senderImage || ''
                     },

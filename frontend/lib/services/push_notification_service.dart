@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -11,6 +12,7 @@ import 'package:image/image.dart' as img;
 class PushNotificationService {
   static final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  static Function(Map<String, dynamic>)? onNotificationClick;
 
   static Future<void> initialize() async {
     // 1. Request permissions (especially for iOS)
@@ -36,10 +38,26 @@ class PushNotificationService {
       initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         // Handle notification click when app is in foreground
-        print("Notification clicked: ${response.payload}");
-        // Deep linking logic handled in main.dart or home_screen.dart via listeners
+        if (onNotificationClick != null && response.payload != null) {
+           try {
+             // Local notifications payload is a stringified Map we passed in
+             final String payloadStr = response.payload!;
+             // For simplicity, we can assume it's data['conversationId'] etc. since we passed it in as message.data.toString()
+             // Actually, it's better to pass it as a structured string.
+             // But for now, let's keep it simple.
+             onNotificationClick!({"payload": payloadStr});
+           } catch(e) { print("Error parsing notification: $e"); }
+        }
       },
     );
+
+    // Initial message check (when app starts from terminated state)
+    RemoteMessage? initialMessage = await _fcm.getInitialMessage();
+    if (initialMessage != null) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        onNotificationClick?.call(initialMessage.data);
+      });
+    }
 
     // 3. Create Android Channel
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -100,15 +118,14 @@ class PushNotificationService {
               largeIcon: personBitmap,
             ),
           ),
-          payload: message.data.toString(),
+          payload: jsonEncode(message.data),
         );
       }
     });
 
     // 5. Handle Background/Terminated Click
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print("A new onMessageOpenedApp event was published!");
-      // Logic for deep link is typically handled globally but we log it here
+      onNotificationClick?.call(message.data);
     });
   }
 
@@ -215,7 +232,7 @@ class PushNotificationService {
       title,
       body,
       platformChannelSpecifics,
-      payload: payload,
+      payload: payload ?? (groupKey != null ? jsonEncode({"groupKey": groupKey}) : null),
     );
   }
 }

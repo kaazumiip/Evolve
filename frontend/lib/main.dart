@@ -1,4 +1,6 @@
 import 'package:app_links/app_links.dart';
+import 'dart:convert';
+import 'screens/community/chat_detail_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
@@ -61,6 +63,44 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _initDeepLinks();
+    
+    // Handle Push Notifications
+    PushNotificationService.onNotificationClick = (data) {
+      _handleNotificationClick(data);
+    };
+  }
+
+  void _handleNotificationClick(Map<String, dynamic> data) {
+    print("Handling notification click: $data");
+    
+    Map<String, dynamic> finalData = data;
+    if (data.containsKey('payload')) {
+      try {
+        finalData = jsonDecode(data['payload']);
+      } catch (e) {
+        print("Error decoding notification payload: $e");
+      }
+    }
+
+    if (finalData['type'] == 'chat' && finalData['conversationId'] != null) {
+      final int convId = int.tryParse(finalData['conversationId'].toString()) ?? 0;
+      final int senderId = int.tryParse(finalData['senderId']?.toString() ?? '') ?? 0;
+      final String senderName = finalData['senderName'] ?? 'Chat';
+      final String imageUrl = finalData['imageUrl'] ?? '';
+
+      if (convId != 0 && _navigatorKey.currentState != null) {
+        _navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => ChatDetailScreen(
+              conversationId: convId,
+              otherUserId: senderId,
+              otherUserName: senderName,
+              otherUserImage: imageUrl,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _initDeepLinks() async {
