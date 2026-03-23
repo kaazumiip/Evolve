@@ -40,7 +40,10 @@ exports.getAIResponse = async (req, res) => {
                 model: "google/gemini-2.0-flash",
                 messages: [
                     { role: "system", content: systemPrompt },
-                    ...messages
+                    ...messages.map(m => ({
+                        role: m.role === 'model' ? 'assistant' : m.role,
+                        content: m.content
+                    }))
                 ],
                 max_tokens: max_tokens || 500,
                 temperature: 0.7,
