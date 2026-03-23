@@ -194,7 +194,7 @@ const updateStreak = async (user) => {
         return `${year}-${month}-${day}`;
     };
 
-    const todayStr = formatLocalDate(new Date());
+    const todayStr = formatLocalDate(new Date(new Date().getTime() + 7 * 3600000));
 
     let lastLoginStr = null;
     if (user.last_login_date) {
@@ -218,7 +218,8 @@ const updateStreak = async (user) => {
         `, [user.id]);
         
         const thisWeekLogins = [...new Set(weeklyRows.map(row => {
-            const d = new Date(row.login_date);
+            // Correctly parse YYYY-MM-DD from the DB to avoid JS Date object shifting to yesterday
+            const d = new Date(formatLocalDate(row.login_date));
             return (d.getDay() + 6) % 7; // Mon=0, Tue=1, ..., Sun=6
         }))];
 
@@ -274,7 +275,7 @@ const updateStreak = async (user) => {
     `, [user.id]);
 
     const thisWeekLogins = [...new Set(weeklyRows.map(row => {
-        const d = new Date(row.login_date);
+        const d = new Date(formatLocalDate(row.login_date));
         return (d.getDay() + 6) % 7; // Mon=0, Tue=1, ..., Sun=6
     }))];
 
