@@ -655,10 +655,21 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                                 _isDragging = true;
                               });
                             },
-                            itemBuilder: (ctx, i) => Container(
-                              key: ValueKey(filtered[i].id),
-                              child: _buildCard(filtered[i]),
-                            ),
+                            itemBuilder: (ctx, i) {
+                              final item = filtered[i];
+                              return Listener(
+                                key: ValueKey(item.id),
+                                onPointerUp: (_) {
+                                  if (_isDragging) {
+                                    setState(() {
+                                      _isDragging = false;
+                                      _isOverDelete = false;
+                                    });
+                                  }
+                                },
+                                child: _buildCard(item),
+                              );
+                            },
                           ),
                         ),
                         if (_isDragging)
