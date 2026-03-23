@@ -102,7 +102,7 @@ class _MyAppState extends State<MyApp> {
           ),
         );
       }
-    } else if ((finalData['type'] == 'comment' || finalData['type'] == 'reply' || finalData['type'] == 'like') && finalData['postId'] != null) {
+    } else if ((finalData['type'] == 'comment' || finalData['type'] == 'reply' || finalData['type'] == 'like' || finalData['type'] == 'like_comment') && finalData['postId'] != null) {
       final int postId = int.tryParse(finalData['postId'].toString()) ?? 0;
       if (postId != 0 && _navigatorKey.currentState != null) {
         _navigatorKey.currentState!.push(

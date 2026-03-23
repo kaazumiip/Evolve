@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'post_detail_screen.dart';
 import '../../services/api_service.dart';
+import 'user_profile_screen.dart';
 
 Color kPrimaryBlue(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF6366F1) : const Color(0xFF2563EB);
 
@@ -43,19 +44,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       _refreshNotifications();
     }
 
-    // Navigate to the relevant post where the interaction happened
-    if (notification['post_id'] != null && mounted) {
-      final postDetails = await _communityService.getPostDetails(notification['post_id']);
-      if (!mounted) return;
+    // Navigate based on type
+    if (mounted) {
+      final String type = notification['type'] ?? '';
       
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PostDetailScreen(
-            postData: postDetails['post'],
+      if ((type == 'friend_request' || type == 'friend_accepted' || type == 'friend_mutual') && notification['sender_id'] != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserProfileScreen(
+              userId: notification['sender_id'],
+              userName: notification['senderName'] ?? 'User',
+              userImage: notification['senderImage'] ?? '',
+            ),
           ),
-        ),
-      );
+        );
+      } else if (notification['post_id'] != null) {
+        final postDetails = await _communityService.getPostDetails(notification['post_id']);
+        if (!mounted) return;
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostDetailScreen(
+              postData: postDetails['post'],
+            ),
+          ),
+        );
+      }
     }
   }
 

@@ -299,6 +299,43 @@ exports.toggleCommentLike = async (req, res) => {
             res.json({ liked: false });
         } else {
             await db.execute('INSERT INTO comment_likes (comment_id, user_id) VALUES (?, ?)', [commentId, userId]);
+            
+            // Push Notification for Comment Like
+            try {
+                const [comm] = await db.execute('SELECT user_id, post_id FROM comments WHERE id = ?', [commentId]);
+                if (comm.length > 0 && comm[0].user_id !== userId) {
+                    const targetUserId = comm[0].user_id;
+                    const postId = comm[0].post_id;
+                    const [[sender]] = await db.execute('SELECT name, profile_picture FROM users WHERE id = ?', [userId]);
+                    
+                    // Insert DB notification
+                    await db.execute(
+                        'INSERT INTO notifications (user_id, sender_id, type, post_id, comment_id) VALUES (?, ?, ?, ?, ?)',
+                        [targetUserId, userId, 'like_comment', postId, commentId]
+                    );
+
+                    const [targetUser] = await db.execute('SELECT fcm_token FROM users WHERE id = ?', [targetUserId]);
+                    if (targetUser.length > 0 && targetUser[0].fcm_token) {
+                        const message = {
+                            notification: {
+                                title: 'New Comment Like',
+                                body: `${sender.name} liked your comment`
+                            },
+                            data: {
+                                type: 'like_comment',
+                                postId: postId.toString(),
+                                senderName: sender.name,
+                                imageUrl: sender.profile_picture || ''
+                            },
+                            token: targetUser[0].fcm_token
+                        };
+                        await admin.messaging().send(message);
+                    }
+                }
+            } catch (notifyErr) {
+                console.error("Error sending comment like notification:", notifyErr);
+            }
+
             res.json({ liked: true });
         }
     } catch (err) {
