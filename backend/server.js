@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first'); // Fix for Railway IPv6 Google API routing drops
 require('dotenv').config();
 
 // Import routes
