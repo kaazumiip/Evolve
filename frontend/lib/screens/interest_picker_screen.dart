@@ -269,8 +269,8 @@ class _InterestPickerScreenState extends State<InterestPickerScreen> {
 
   Widget _buildUpdateView() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final titleColor = isDark ? Colors.white : Colors.black87;
+    final backgroundColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF0F7FF);
+    final titleColor = isDark ? Colors.white : const Color(0xFF1E3A8A);
 
     // Gather available subjects based on selected main interests
     List<SubInterest> availableSubs = [];
@@ -372,6 +372,7 @@ class _InterestPickerScreenState extends State<InterestPickerScreen> {
                                return SubjectChip(
                                  label: sub.name, 
                                  isSelected: _selectedSubInterests.contains(sub.id),
+                                 isBlueMode: true,
                                  onTap: () {
                                    setState(() {
                                      if (_selectedSubInterests.contains(sub.id)) {
@@ -388,7 +389,6 @@ class _InterestPickerScreenState extends State<InterestPickerScreen> {
                           ),
                         ),
                   ),
-                  
                   const SizedBox(height: 20),
                   
                   // Save/Next Button (Bottom Right aligned)

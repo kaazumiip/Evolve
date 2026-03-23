@@ -244,12 +244,14 @@ class _SubjectSelectionScreenState extends State<SubjectSelectionScreen> {
 class SubjectChip extends StatefulWidget {
   final String label;
   final bool isSelected;
+  final bool isBlueMode;
   final VoidCallback onTap;
 
   const SubjectChip({
     Key? key,
     required this.label,
     required this.isSelected,
+    this.isBlueMode = false,
     required this.onTap,
   }) : super(key: key);
 
@@ -306,7 +308,9 @@ class _SubjectChipState extends State<SubjectChip>
         decoration: BoxDecoration(
           color: widget.isSelected
               ? accentColor
-              : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF5F5F5)),
+              : (widget.isBlueMode 
+                  ? (isDark ? const Color(0xFF334155) : const Color(0xFFE0E7FF)) 
+                  : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF5F5F5))),
           borderRadius: BorderRadius.circular(25),
           border: isDark && !widget.isSelected ? Border.all(color: Colors.white10) : null,
           boxShadow: widget.isSelected
@@ -330,11 +334,11 @@ class _SubjectChipState extends State<SubjectChip>
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 300),
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: widget.isSelected
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                    color: widget.isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.grey[700]),
+                    color: widget.isSelected 
+                        ? Colors.white 
+                        : (widget.isBlueMode 
+                            ? (isDark ? Colors.white70 : const Color(0xFF4338CA)) 
+                            : (isDark ? Colors.white70 : Colors.grey[700])),
                   ),
                   child: Text(widget.label),
                 ),

@@ -84,6 +84,12 @@ class _ProfileTabState extends State<ProfileTab> {
   }
   
   void _handleSignOut(BuildContext context) async {
+    // Reset theme to light mode automatically on sign out
+    themeManager.value = false;
+    ApiService.isDarkMode = false;
+    const storage = FlutterSecureStorage();
+    await storage.write(key: 'is_dark_mode', value: 'false');
+
     await _authService.logout();
     if (context.mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
@@ -533,7 +539,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Center(
