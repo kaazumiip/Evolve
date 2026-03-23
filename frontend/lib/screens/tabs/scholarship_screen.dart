@@ -218,6 +218,17 @@ class _ScholarshipExplorerScreenState extends State<ScholarshipExplorerScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                IconButton(
+                  onPressed: () => _toggleFavorite(s),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Icon(
+                    _favoritedIds.contains(s['id']) ? Icons.star_rounded : Icons.star_outline_rounded,
+                    color: _favoritedIds.contains(s['id']) ? Colors.amber : Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,15 +252,16 @@ class _ScholarshipExplorerScreenState extends State<ScholarshipExplorerScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   width: 48,
                   height: 48,
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: bgColor,
+                    color: Colors.white,
                     shape: BoxShape.circle,
                     boxShadow: [
-                      BoxShadow(color: isDark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.1), blurRadius: 4),
+                      BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
                     ],
                   ),
                   child: s['logo_url'] != null && s['logo_url'].toString().isNotEmpty
@@ -262,14 +274,6 @@ class _ScholarshipExplorerScreenState extends State<ScholarshipExplorerScreen> {
                           ),
                         )
                       : Icon(Icons.school, color: cardColor, size: 24),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(
-                    _favoritedIds.contains(s['id']) ? Icons.favorite : Icons.favorite_border,
-                    color: _favoritedIds.contains(s['id']) ? Colors.redAccent : Colors.white,
-                  ),
-                  onPressed: () => _toggleFavorite(s),
                 ),
               ],
             ),
@@ -313,14 +317,15 @@ class _ScholarshipExplorerScreenState extends State<ScholarshipExplorerScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: isDark ? Colors.white54 : Colors.grey),
-        const SizedBox(width: 10),
+        Icon(icon, size: 20, color: Colors.grey.shade400),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey)),
-              Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: isDark ? Colors.white : Colors.black87)),
+              Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+              const SizedBox(height: 2),
+              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -378,15 +383,23 @@ class _ScholarshipExplorerScreenState extends State<ScholarshipExplorerScreen> {
         }
       });
 
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            isFavorited ? AppLocalizations.of(context)!.addedToFavorites : AppLocalizations.of(context)!.removedFromFavorites,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          content: Row(
+            children: [
+              Icon(isFavorited ? Icons.star : Icons.star_border, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                isFavorited ? AppLocalizations.of(context)!.addedToFavorites : AppLocalizations.of(context)!.removedFromFavorites,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
           ),
-          backgroundColor: isFavorited ? Colors.green : Colors.redAccent,
+          backgroundColor: isFavorited ? const Color(0xFF6366F1) : const Color(0xFF94A3B8),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           duration: const Duration(seconds: 2),
         ),
       );

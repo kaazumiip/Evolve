@@ -33,29 +33,33 @@ exports.getAIResponse = async (req, res) => {
         Always relate your advice back to their specific passions and career interests if known. 
         Keep responses supportive, student-centered, and inspiring.`;
 
-        // Direct Gemini API Call (using axios for simplicity)
+        // OpenRouter API Call
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.AI_CHAT_API_KEY}`,
+            "https://openrouter.ai/api/v1/chat/completions",
             {
-                contents: [
-                    { role: "user", parts: [{ text: `SYSTEM INSTRUCTION: ${systemPrompt}` }] },
-                    ...messages.map(m => ({
-                        role: m.role === 'assistant' ? 'model' : 'user',
-                        parts: [{ text: m.content }]
-                    }))
+                model: "google/gemini-2.0-flash-lite-preview-001:free",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    ...messages
                 ],
-                generationConfig: {
-                    maxOutputTokens: max_tokens || 500,
-                    temperature: 0.7,
+                max_tokens: max_tokens || 500,
+                temperature: 0.7,
+            },
+            {
+                headers: {
+                    "Authorization": `Bearer ${process.env.AI_CHAT_API_KEY}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://evolve-app.com", // Optional, for OpenRouter analytics
+                    "X-Title": "Evolve App", // Optional
                 }
             }
         );
 
-        // Transform Gemini response to match the expected format on frontend
+        // Transform OpenRouter response to match the expected format on frontend
         const result = {
             choices: [{
                 message: {
-                    content: response.data.candidates[0].content.parts[0].text
+                    content: response.data.choices[0].message.content
                 }
             }]
         };

@@ -28,18 +28,25 @@ exports.getConversations = async (req, res) => {
                 u.name as otherUserName,
                 u.profile_picture as otherUserImage,
                 u.last_seen as otherUserLastSeen,
+                c.status,
+                c.archived_by,
                 (
                     SELECT m.type FROM messages m 
                     WHERE m.conversation_id = c.id 
-                    ORDER BY m.created_at DESC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY
+                    ORDER BY m.created_at DESC LIMIT 1
                 ) as lastMessageType
             FROM conversations c
             JOIN conversation_participants cp_me ON c.id = cp_me.conversation_id
             JOIN conversation_participants cp_other ON c.id = cp_other.conversation_id
             JOIN users u ON cp_other.user_id = u.id
             WHERE cp_me.user_id = ? AND cp_other.user_id != ?
+              AND NOT EXISTS (
+                  SELECT 1 FROM user_blocks 
+                  WHERE (blocker_id = ? AND blocked_id = u.id) 
+                     OR (blocker_id = u.id AND blocked_id = ?)
+              )
             ORDER BY c.updated_at DESC
-        `, [req.user.id, req.user.id, req.user.id]);
+        `, [req.user.id, req.user.id, req.user.id, req.user.id, req.user.id]);
 
         res.json(conversations);
     } catch (err) {
@@ -67,15 +74,27 @@ exports.startConversation = async (req, res) => {
             return res.json({ conversationId: existing[0].id });
         }
 
+        // Check if they are friends
+        const [isFriend] = await db.execute(
+            'SELECT * FROM friendships WHERE (requester_id = ? AND receiver_id = ? AND status = "accepted") OR (requester_id = ? AND receiver_id = ? AND status = "accepted")',
+            [userId, targetUserId, targetUserId, userId]
+        );
+
+        const status = isFriend.length > 0 ? 'active' : 'archived';
+        const archivedBy = isFriend.length > 0 ? null : targetUserId;
+
         // Create new conversation
-        const [result] = await db.execute('INSERT INTO conversations (created_at, updated_at) VALUES (NOW(), NOW())'); 
+        const [result] = await db.execute(
+            'INSERT INTO conversations (created_at, updated_at, status, archived_by) VALUES (NOW(), NOW(), ?, ?)',
+            [status, archivedBy]
+        ); 
         const conversationId = result.insertId;
 
         await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, NOW()), (?, ?, NOW())',
-            [conversationId, userId, conversationId, targetUserId]
+            [conversationId, userId, targetUserId]
         );
 
-        res.json({ conversationId });
+        res.json({ conversationId, status });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -118,14 +137,34 @@ exports.getMessages = async (req, res) => {
 exports.sendMessage = async (req, res) => {
     const conversationId = req.params.id;
     const { content, image_url, media_url, type, reply_to_id } = req.body;
+    const userId = req.user.id;
 
     try {
+        // 1. Block Check
+        const [participants] = await db.execute(
+            'SELECT user_id FROM conversation_participants WHERE conversation_id = ? AND user_id != ?',
+            [conversationId, userId]
+        );
+        
+        if (participants.length > 0) {
+            const targetId = participants[0].user_id;
+            const [isBlocked] = await db.execute(
+                'SELECT * FROM user_blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)',
+                [userId, targetId, targetId, userId]
+            );
+            if (isBlocked.length > 0) {
+                return res.status(403).json({ msg: "Cannot message blocked user", blocked: true });
+            }
+        }
+
         const [result] = await db.execute(
             'INSERT INTO messages (conversation_id, sender_id, content, image_url, media_url, type, reply_to_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [conversationId, req.user.id, content || null, image_url || null, media_url || null, type || 'text', reply_to_id || null]
+            [conversationId, userId, content || null, image_url || null, media_url || null, type || 'text', reply_to_id || null]
         );
 
         await db.execute('UPDATE conversations SET updated_at = NOW() WHERE id = ?', [conversationId]);
+        
+        // ... (rest of sendMessage logic)
 
         const [msg] = await db.execute(`
             SELECT 
@@ -227,6 +266,31 @@ exports.deleteMessage = async (req, res) => {
         );
 
         res.json({ id, conversationId: msg[0].conversation_id, msg: 'Message deleted' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Accept stranger chat
+exports.handleStrangerChat = async (req, res) => {
+    const { conversationId, action } = req.body; // action: 'accept' or 'reject'
+    const userId = req.user.id;
+
+    try {
+        if (action === 'accept') {
+            await db.execute(
+                'UPDATE conversations SET status = "active", archived_by = NULL WHERE id = ? AND archived_by = ?',
+                [conversationId, userId]
+            );
+            res.json({ msg: 'Chat accepted' });
+        } else {
+            // Delete conversation and messages if rejected
+            await db.execute('DELETE FROM messages WHERE conversation_id = ?', [conversationId]);
+            await db.execute('DELETE FROM conversation_participants WHERE conversation_id = ?', [conversationId]);
+            await db.execute('DELETE FROM conversations WHERE id = ?', [conversationId]);
+            res.json({ msg: 'Chat rejected and deleted' });
+        }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

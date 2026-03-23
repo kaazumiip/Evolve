@@ -50,7 +50,24 @@ exports.getUserProfile = async (req, res) => {
             requesterId = friendship[0].requester_id;
         }
 
-        // Fetch user posts
+        // Check if user is blocked (by either side)
+        const [blockCheck] = await db.execute(`
+            SELECT * FROM user_blocks 
+            WHERE (blocker_id = ? AND blocked_id = ?) 
+               OR (blocker_id = ? AND blocked_id = ?)
+        `, [currentUserId, targetUserId, targetUserId, currentUserId]);
+
+        if (blockCheck.length > 0) {
+            return res.json({ 
+                msg: 'User is blocked', 
+                isBlocked: true,
+                blockerId: blockCheck[0].blocker_id,
+                name: user.name,
+                profile_picture: user.profile_picture
+            });
+        }
+
+        // Fetch user posts (Filter out blocked users' posts if needed, though this is a profile view)
         const [posts] = await db.execute(`
             SELECT 
                 p.id, p.title, p.body, p.created_at, p.image_url,
@@ -299,6 +316,68 @@ exports.updateSubscription = async (req, res) => {
         res.json({ msg: 'Subscription updated successfully', subscription_plan: planName });
     } catch (err) {
         console.error('Update Subscription Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Block a user
+exports.blockUser = async (req, res) => {
+    const userId = req.user.id;
+    const { targetUserId } = req.params;
+
+    try {
+        await db.execute(
+            'INSERT INTO user_blocks (blocker_id, blocked_id) VALUES (?, ?)',
+            [userId, targetUserId]
+        );
+
+        // Remove friendship if exists
+        await db.execute(
+            'DELETE FROM friendships WHERE (requester_id = ? AND receiver_id = ?) OR (requester_id = ? AND receiver_id = ?)',
+            [userId, targetUserId, targetUserId, userId]
+        );
+
+        res.json({ msg: 'User blocked' });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') return res.json({ msg: 'User already blocked' });
+        console.error('Block User Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Unblock a user
+exports.unblockUser = async (req, res) => {
+    const userId = req.user.id;
+    const { targetUserId } = req.params;
+
+    try {
+        await db.execute(
+            'DELETE FROM user_blocks WHERE blocker_id = ? AND blocked_id = ?',
+            [userId, targetUserId]
+        );
+
+        res.json({ msg: 'User unblocked' });
+    } catch (err) {
+        console.error('Unblock User Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Report a user
+exports.reportUser = async (req, res) => {
+    const userId = req.user.id;
+    const { targetUserId } = req.params;
+    const { reason } = req.body;
+
+    try {
+        await db.execute(
+            'INSERT INTO user_reports (reporter_id, reported_id, reason) VALUES (?, ?, ?)',
+            [userId, targetUserId, reason || 'No reason provided']
+        );
+
+        res.json({ msg: 'User reported' });
+    } catch (err) {
+        console.error('Report User Error:', err.message);
         res.status(500).send('Server Error');
     }
 };

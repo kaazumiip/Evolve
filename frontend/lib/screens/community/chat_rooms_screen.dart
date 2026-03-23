@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/community_service.dart';
 import '../../../generated/l10n/app_localizations.dart';
 import '../../services/socket_service.dart';
+import '../../services/api_service.dart';
 import 'chat_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
@@ -18,12 +19,14 @@ class ChatRoomsScreen extends StatefulWidget {
 class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final CommunityService _communityService = CommunityService();
+  final ApiService _apiService = ApiService();
   late Future<List<Map<String, dynamic>>> _conversationsFuture;
   final SocketService _socketService = SocketService();
   final Map<int, bool> _onlineUsers = {};
 
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearchingUsers = false;
+  bool _showArchived = false;
   final List<StreamSubscription> _subscriptions = [];
 
   @override
@@ -146,13 +149,21 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          AppLocalizations.of(context)!.messages,
+          _showArchived ? "Archived Chats" : AppLocalizations.of(context)!.messages,
           style: GoogleFonts.outfit(
             color: titleColor,
             fontWeight: FontWeight.bold,
             fontSize: 22,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(_showArchived ? Icons.chat_rounded : Icons.archive_outlined, color: kPrimaryBlue(context)),
+            onPressed: () => setState(() => _showArchived = !_showArchived),
+            tooltip: _showArchived ? "Back to Chats" : "Archived Chats",
+          ),
+          const SizedBox(width: 8),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(color: Theme.of(context).dividerColor.withOpacity(0.1), height: 1),
@@ -251,11 +262,26 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
           return Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(kPrimaryBlue(context))));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text(AppLocalizations.of(context)!.noConversationsYet));
         }
+        
+        final allChats = snapshot.data ?? [];
+        final chats = allChats.where((c) {
+          final isArchived = c['status'] == 'archived' && c['archived_by'] == _socketService.currentUserId;
+          return _showArchived ? isArchived : !isArchived;
+        }).toList();
 
-        final chats = snapshot.data!;
+        if (chats.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(_showArchived ? Icons.archive_outlined : Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                Text(_showArchived ? "No archived requests" : AppLocalizations.of(context)!.noConversationsYet, style: GoogleFonts.outfit(color: Colors.grey)),
+              ],
+            ),
+          );
+        }
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -281,6 +307,10 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () async {
+                      if (chat['status'] == 'archived' && chat['archived_by'] == _socketService.currentUserId) {
+                        _showStrangerActionDialog(chat);
+                        return;
+                      }
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -297,7 +327,7 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.transparent,
                       ),
                       child: Row(
@@ -369,7 +399,7 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.outfit(
-                                          color: unreadCount > 0 ? Colors.black87 : Colors.grey.shade500,
+                                          color: unreadCount > 0 ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87) : Colors.grey.shade500,
                                           fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
                                           fontSize: 14,
                                         ),
@@ -408,6 +438,67 @@ class _ChatRoomsScreenState extends State<ChatRoomsScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showStrangerActionDialog(Map<String, dynamic> chat) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Message Request", style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text("${chat['otherUserName']} wants to message you. If you accept, you can chat with each other.", textAlign: TextAlign.center, style: GoogleFonts.outfit(color: Colors.grey)),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _apiService.handleStrangerChat(chat['id'], 'reject');
+                      _refreshConversations();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      side: const BorderSide(color: Colors.red),
+                      foregroundColor: Colors.red,
+                    ),
+                    child: const Text("Reject", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _apiService.handleStrangerChat(chat['id'], 'accept');
+                      _refreshConversations();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      backgroundColor: kPrimaryBlue(context),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text("Accept", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 

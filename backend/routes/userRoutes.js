@@ -41,6 +41,21 @@ router.get('/friends/:userId', auth, userController.getFriends);
 // @route   PUT /api/users/subscription
 // @desc    Update user subscription
 // @access  Private
+// @route   POST /api/users/block/:targetUserId
+// @desc    Block a user
+// @access  Private
+router.post('/block/:targetUserId', auth, userController.blockUser);
+
+// @route   POST /api/users/unblock/:targetUserId
+// @desc    Unblock a user
+// @access  Private
+router.post('/unblock/:targetUserId', auth, userController.unblockUser);
+
+// @route   POST /api/users/report/:targetUserId
+// @desc    Report a user
+// @access  Private
+router.post('/report/:targetUserId', auth, userController.reportUser);
+
 router.put('/subscription', auth, userController.updateSubscription);
 
 module.exports = router;

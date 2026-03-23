@@ -23,6 +23,8 @@ class SocketService {
   Stream<Map<String, dynamic>> get userStatus => _userStatusController.stream;
 
   int? activeConversationId;
+  int? _currentUserId;
+  int? get currentUserId => _currentUserId;
   final ValueNotifier<int> unreadCount = ValueNotifier<int>(0);
 
   void resetUnreadCount() {
@@ -39,6 +41,7 @@ class SocketService {
 
     socket!.onConnect((_) {
       print('Connected to socket server');
+      _currentUserId = userId;
       socket!.emit('user_connected', userId);
     });
 

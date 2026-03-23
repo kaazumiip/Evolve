@@ -151,12 +151,40 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          if (!_isLoading && _userProfile != null && _currentUserId != widget.userId)
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: titleColor),
+              onSelected: (value) {
+                if (value == 'block') _showBlockDialog();
+                if (value == 'report') _showReportDialog();
+                if (value == 'unblock') _handleUnblock();
+              },
+              itemBuilder: (context) {
+                final isBlocked = _userProfile?['isBlocked'] == true;
+                final isMeBlocker = _userProfile?['blockerId'] == _currentUserId;
+
+                if (isBlocked && isMeBlocker) {
+                  return [
+                    const PopupMenuItem(value: 'unblock', child: Text('Unblock User')),
+                  ];
+                }
+
+                return [
+                  const PopupMenuItem(value: 'report', child: Text('Report User')),
+                  const PopupMenuItem(value: 'block', child: Text('Block User', style: TextStyle(color: Colors.red))),
+                ];
+              },
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _userProfile == null
               ? Center(child: Text(AppLocalizations.of(context)!.userNotFound))
-              : _buildProfileContent(),
+              : (_userProfile?['isBlocked'] == true && _userProfile?['blockerId'] != _currentUserId)
+                  ? _buildBlockedByView()
+                  : _buildProfileContent(),
     );
   }
 
@@ -717,17 +745,80 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Widget _buildActionButton(String text, VoidCallback onTap, {bool isPrimary = false}) {
-    return ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isPrimary ? Colors.blue : Colors.grey.shade100,
-        foregroundColor: isPrimary ? Colors.white : Colors.black87,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+  void _handleUnblock() async {
+    final success = await _apiService.unblockUser(widget.userId);
+    if (success) _fetchProfile();
+  }
+
+  void _showReportDialog() {
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Report User'),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(hintText: 'Reason for reporting...'),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await _apiService.reportUser(widget.userId, reasonController.text);
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User reported successfully')));
+              }
+            }, 
+            child: const Text('Report'),
+          ),
+        ],
       ),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
+    );
+  }
+
+  void _showBlockDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Block User?'),
+        content: const Text('Blocking will remove friendship and they will no longer see your content.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await _apiService.blockUser(widget.userId);
+              if (success) _fetchProfile();
+            }, 
+            child: const Text('Block', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockedByView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.block_flipped, size: 80, color: Colors.grey.withOpacity(0.5)),
+          const SizedBox(height: 20),
+          Text(
+            "This user has blocked you",
+            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "You cannot see their posts or interact with them.",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(color: Colors.grey),
+          ),
+        ],
+      ),
     );
   }
 }

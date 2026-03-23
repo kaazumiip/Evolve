@@ -33,4 +33,9 @@ router.put('/messages/:id', auth, chatController.editMessage);
 // @access  Private
 router.delete('/messages/:id', auth, chatController.deleteMessage);
 
+// @route   POST api/chat/handle-stranger
+// @desc    Accept or reject stranger chat
+// @access  Private
+router.post('/handle-stranger', auth, chatController.handleStrangerChat);
+
 module.exports = router;

@@ -449,7 +449,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   onTap: () => _handleUpdateInterests(context),
                 ),
                 _buildSettingTile(
-                  icon: Icons.favorite_border,
+                  icon: Icons.star_border_rounded,
                   title: AppLocalizations.of(context)!.favorites,
                   subtitle: AppLocalizations.of(context)!.myFavoritesSub,
                   onTap: () {

@@ -210,6 +210,49 @@ class ApiService {
     }
   }
 
+  Future<bool> blockUser(int targetUserId) async {
+    try {
+      await _dio.post('users/block/$targetUserId');
+      return true;
+    } catch (e) {
+      print('Block User Error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> unblockUser(int targetUserId) async {
+    try {
+      await _dio.post('users/unblock/$targetUserId');
+      return true;
+    } catch (e) {
+      print('Unblock User Error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> reportUser(int targetUserId, String reason) async {
+    try {
+      await _dio.post('users/report/$targetUserId', data: {'reason': reason});
+      return true;
+    } catch (e) {
+      print('Report User Error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> handleStrangerChat(int conversationId, String action) async {
+    try {
+      await _dio.post('chat/handle-stranger', data: {
+        'conversationId': conversationId,
+        'action': action,
+      });
+      return true;
+    } catch (e) {
+      print('Handle Stranger Chat Error: $e');
+      return false;
+    }
+  }
+
   Future<List<dynamic>> searchUsers(String query) async {
     try {
       // Assuming a generic user search endpoint exists or searching by query params
