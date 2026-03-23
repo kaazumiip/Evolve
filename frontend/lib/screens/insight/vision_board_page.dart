@@ -8,6 +8,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../generated/l10n/app_localizations.dart';
 
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
+
 import '../../models/vision_model.dart';
 
 Color kPrimaryBlue(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF6366F1) : const Color(0xFF2563EB);
@@ -28,7 +33,9 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
   List<dynamic> _pexelsResults = [];
   bool _isSearchingPexels = false;
   Timer? _searchDebounce;
-  final String _pexelsApiKey = 'wvgxIIaKzBDTkY9fDvEcMJ5EQOG4cK20sQLtppxLgpxhWxMA32QAJWUK';
+  bool _isDragging = false;
+  bool _isOverDelete = false;
+  final String _pexelsApiKey = 'wvgxIIaKzBDTkY9fDvEcMJ5EDGEOG4cK20sQLtppxLgpxhWxMA32QAJWUK';
 
   // ─────────────────────────────────────────────
   //  STEP 5 — Load when page starts
@@ -617,21 +624,108 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
             Expanded(
               child: filtered.isEmpty
                   ? _emptyState()
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: GridView.builder(
-                        padding: EdgeInsets.zero,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 1.0,
+                  : Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: ReorderableGridView.builder(
+                            padding: const EdgeInsets.only(bottom: 100),
+                            gridDelegate: SliverQuiltedGridDelegate(
+                              crossAxisCount: 4,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              repeatPattern: QuiltedGridRepeatPattern.mirrored,
+                              pattern: [
+                                const QuiltedGridTile(2, 2),
+                                const QuiltedGridTile(1, 1),
+                                const QuiltedGridTile(1, 1),
+                                const QuiltedGridTile(1, 2),
+                              ],
+                            ),
+                            itemCount: filtered.length,
+                            onReorder: (oldIndex, newIndex) {
+                              setState(() {
+                                final item = filtered.removeAt(oldIndex);
+                                filtered.insert(newIndex, item);
+                                _saveItems();
+                              });
+                            },
+                            onDragStart: (index) {
+                              setState(() {
+                                _isDragging = true;
+                              });
+                            },
+                            onDragEnd: (index) {
+                              setState(() {
+                                _isDragging = false;
+                                _isOverDelete = false;
+                              });
+                            },
+                            itemBuilder: (ctx, i) => Container(
+                              key: ValueKey(filtered[i].id),
+                              child: _buildCard(filtered[i]),
+                            ),
+                          ),
                         ),
-
-                  itemCount: filtered.length,
-                  itemBuilder: (ctx, i) => _buildCard(filtered[i]),
-                ),
-              ),
+                        if (_isDragging)
+                          Positioned(
+                            bottom: 30,
+                            left: 0,
+                            right: 0,
+                            child: DragTarget<ReorderableEntity>(
+                              onWillAcceptWithDetails: (details) {
+                                setState(() => _isOverDelete = true);
+                                return true;
+                              },
+                              onLeave: (details) {
+                                setState(() => _isOverDelete = false);
+                              },
+                              onAcceptWithDetails: (details) {
+                                // Find the item by id from the entity
+                                final String draggedId = (details.data.key as ValueKey).value;
+                                setState(() {
+                                  _items.removeWhere((item) => item.id == draggedId);
+                                  _isDragging = false;
+                                  _isOverDelete = false;
+                                  _saveItems();
+                                });
+                                HapticFeedback.heavyImpact();
+                              },
+                              builder: (context, candidateData, rejectedData) {
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: const EdgeInsets.symmetric(horizontal: 100),
+                                  padding: const EdgeInsets.symmetric(vertical: 20),
+                                  decoration: BoxDecoration(
+                                    color: _isOverDelete ? Colors.red : Colors.red.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(30),
+                                    border: Border.all(color: Colors.red, width: 2),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _isOverDelete ? Icons.delete_forever : Icons.delete_outline,
+                                        color: Colors.white,
+                                        size: 32,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Drop here to delete",
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -641,9 +735,7 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
 
   Widget _buildCard(VisionItem item) {
     return GestureDetector(
-      onLongPressStart: (_) => _startLongPress(item),
-      onLongPressEnd: (_) => _cancelLongPress(),
-      onLongPressCancel: _cancelLongPress,
+      onLongPress: () => _openEditSheet(item),
       child: Transform.rotate(
         angle: item.rotation * 3.14159 / 180,
         child: AnimatedContainer(
