@@ -666,7 +666,7 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                             bottom: 30,
                             left: 0,
                             right: 0,
-                            child: DragTarget<dynamic>(
+                            child: DragTarget<Object>(
                               onWillAccept: (data) {
                                 setState(() => _isOverDelete = true);
                                 return true;
