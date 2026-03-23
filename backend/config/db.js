@@ -56,6 +56,7 @@ function translateDialect(query) {
   // 1. Datetime conversions
   processed = processed.replace(/SYSUTCDATETIME\(\)/gi, 'UTC_TIMESTAMP()');
   processed = processed.replace(/GETDATE\(\)/gi, 'NOW()');
+  processed = processed.replace(/CURRENT_TIMESTAMP/gi, 'NOW()');
   
   // 2. Pagination: OFFSET ? ROWS FETCH NEXT ? ROWS ONLY -> LIMIT ?, ?
   // Note: MySQL LIMIT order is (offset, count).
