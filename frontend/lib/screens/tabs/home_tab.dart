@@ -586,10 +586,6 @@ class _HomeTabState extends State<HomeTab> {
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: Text(AppLocalizations.of(context)!.seeAll, style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF6366F1) : const Color(0xFF2563EB))),
-                ),
               ],
             ),
             const SizedBox(height: 15),
