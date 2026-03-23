@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'payment_success_screen.dart';
+import 'checkout_page.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String title;
@@ -238,9 +239,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => PaymentSuccessScreen(planName: widget.title)),
+                          MaterialPageRoute(
+                            builder: (context) => CheckoutPage(
+                              planName: widget.title,
+                              planCost: widget.cost,
+                            ),
+                          ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
@@ -355,10 +361,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
-                child: Icon(
-                  Icons.qr_code_2_rounded,
-                  size: 160,
-                  color: const Color(0xFF1E293B),
+                child: Image.asset(
+                  'assets/qr code.jpg',
+                  fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(height: 8),
