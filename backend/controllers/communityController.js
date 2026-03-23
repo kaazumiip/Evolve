@@ -42,7 +42,7 @@ exports.createPost = async (req, res) => {
     const { title, body, tags, image_url, media_urls } = req.body;
     try {
         const [result] = await db.execute(
-            'INSERT INTO posts (user_id, title, body, tags, image_url, media_urls, created_at) VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR))',
+            'INSERT INTO posts (user_id, title, body, tags, image_url, media_urls) VALUES (?, ?, ?, ?, ?, ?)',
             [req.user.id, title, body, JSON.stringify(tags || []), image_url || null, JSON.stringify(media_urls || [])]
         );
         const newPostId = result.insertId;

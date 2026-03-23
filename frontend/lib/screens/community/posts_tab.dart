@@ -254,7 +254,9 @@ class PostsTabState extends State<PostsTab> {
                                     final post = _posts[index];
                                     String timeDisplay;
                                     try {
-                                      final date = DateTime.parse(post['created_at']);
+                                      final rawDate = DateTime.parse(post['created_at']);
+                                      // Force to UTC if not explicit, then convert to local
+                                      final date = rawDate.isUtc ? rawDate.toLocal() : rawDate.add(rawDate.timeZoneOffset).toLocal();
                                       timeDisplay = timeago.format(date);
                                     } catch (e) {
                                       timeDisplay = 'Just now';

@@ -1741,7 +1741,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   String _formatTime(String? isoString) {
     if (isoString == null) return '';
     try {
-      final date = DateTime.parse(isoString).toLocal();
+      final rawDate = DateTime.parse(isoString);
+      final date = rawDate.isUtc ? rawDate.toLocal() : rawDate.add(rawDate.timeZoneOffset).toLocal();
       return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return '';

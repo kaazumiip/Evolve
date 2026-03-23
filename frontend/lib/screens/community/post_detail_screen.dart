@@ -213,7 +213,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   // Calculate time
                   String timeDisplay;
                   try {
-                    final date = DateTime.parse(post['created_at']);
+                    final rawDate = DateTime.parse(post['created_at']);
+                    final date = rawDate.isUtc ? rawDate.toLocal() : rawDate.add(rawDate.timeZoneOffset).toLocal();
                     timeDisplay = timeago.format(date);
                   } catch (e) {
                     timeDisplay = 'Just now';
@@ -432,7 +433,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final mediaUrl = comment['media_url'];
 
     final time = comment['created_at'] != null 
-      ? timeago.format(DateTime.parse(comment['created_at'])) 
+      ? () {
+          final rawDate = DateTime.parse(comment['created_at']);
+          final date = rawDate.isUtc ? rawDate.toLocal() : rawDate.add(rawDate.timeZoneOffset).toLocal();
+          return timeago.format(date);
+        }()
       : 'Just now';
     
     final likeCount = comment['likeCount'] ?? 0;
