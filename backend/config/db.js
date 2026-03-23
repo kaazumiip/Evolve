@@ -22,10 +22,8 @@ const config = {
   timezone: '+07:00' // Ensure MySQL dates match local time (+07:00)
 };
 
-// Use full DATABASE_URL if available (solves Railway DNS / IPv6 issues)
-const poolConnectionConfig = process.env.DATABASE_URL 
-  ? { uri: process.env.DATABASE_URL.replace('?ssl-mode=REQUIRED', ''), ssl: { rejectUnauthorized: false } }
-  : config;
+// Use config object primarily (Restores compatibility with Render separate vars)
+const poolConnectionConfig = config;
 
 const pool = mysql.createPool(poolConnectionConfig);
 
