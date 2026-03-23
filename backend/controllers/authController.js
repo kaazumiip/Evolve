@@ -304,7 +304,7 @@ exports.googleNativeLogin = async (req, res) => {
             const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
             const [result] = await db.execute(
-                'INSERT INTO users (name, email, password, google_id, is_password_set) VALUES (?, ?, ?, ?, ?)',
+                'INSERT INTO users (name, email, password, google_id, is_password_set, last_seen) VALUES (?, ?, ?, ?, ?, NOW())',
                 [name, email, hashedPassword, googleId, 0]
             );
             user = { id: result.insertId, name, email, is_password_set: 0 };
@@ -375,7 +375,7 @@ exports.facebookLogin = async (req, res) => {
             const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
             const [result] = await db.execute(
-                'INSERT INTO users (name, email, password, facebook_id, is_password_set) VALUES (?, ?, ?, ?, ?)',
+                'INSERT INTO users (name, email, password, facebook_id, is_password_set, last_seen) VALUES (?, ?, ?, ?, ?, NOW())',
                 [name, email, hashedPassword, facebookId, 0]
             );
             user = { id: result.insertId, name, email, is_password_set: 0 };
