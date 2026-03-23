@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../generated/l10n/app_localizations.dart';
 
@@ -24,6 +25,10 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
   final List<VisionItem> _items = [];
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  List<dynamic> _pexelsResults = [];
+  bool _isSearchingPexels = false;
+  Timer? _searchDebounce;
+  final String _pexelsApiKey = 'wvgxIIaKzBDTkY9fDvEcMJ5EQOG4cK20sQLtppxLgpxhWxMA32QAJWUK';
 
   // ─────────────────────────────────────────────
   //  STEP 5 — Load when page starts
@@ -410,6 +415,62 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
     _longPressTimer = null;
   }
 
+  Future<void> _searchPexels(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _pexelsResults = [];
+        _isSearchingPexels = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearchingPexels = true);
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.pexels.com/v1/search?query=$query&per_page=10'),
+        headers: {'Authorization': _pexelsApiKey},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _pexelsResults = data['photos'];
+          _isSearchingPexels = false;
+        });
+      }
+    } catch (e) {
+      print('Pexels search error: $e');
+      setState(() => _isSearchingPexels = false);
+    }
+  }
+
+  void _onSearchChanged(String v) {
+    setState(() => _searchQuery = v);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+      _searchPexels(v);
+    });
+  }
+
+  void _addRemoteImage(Map<String, dynamic> photo) async {
+    setState(() {
+      _items.add(VisionItem(
+        id: UniqueKey().toString(),
+        imagePath: '', // Local path empty for remote
+        isRemote: true,
+        url: photo['src']['large'],
+        caption: photo['alt'],
+        x: 20 + (_items.length % 3) * 180.0,
+        y: 20 + (_items.length ~/ 3) * 200.0,
+      ));
+      _searchCtrl.clear();
+      _searchQuery = '';
+      _pexelsResults = [];
+    });
+    await _saveItems();
+  }
+
   // ─────────────────────────────────────────────
   //  BUILD
   // ─────────────────────────────────────────────
@@ -485,7 +546,7 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                 ),
                 child: TextField(
                   controller: _searchCtrl,
-                  onChanged: (v) => setState(() => _searchQuery = v),
+                  onChanged: _onSearchChanged,
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!.searchForInspiration,
                     hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey.shade400),
@@ -508,6 +569,47 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                 ),
               ),
             ),
+
+            if (_pexelsResults.isNotEmpty || _isSearchingPexels)
+              Container(
+                height: 120,
+                margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                    )
+                  ],
+                ),
+                child: _isSearchingPexels 
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                      itemCount: _pexelsResults.length,
+                      itemBuilder: (ctx, i) {
+                        final photo = _pexelsResults[i];
+                        return GestureDetector(
+                          onTap: () => _addRemoteImage(photo),
+                          child: Container(
+                            width: 96,
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              image: DecorationImage(
+                                image: NetworkImage(photo['src']['tiny']),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            child: const Icon(Icons.add_circle, color: Colors.white70),
+                          ),
+                        );
+                      },
+                    ),
+              ),
 
             const SizedBox(height: 16),
 
@@ -561,7 +663,13 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.file(File(item.imagePath), fit: BoxFit.cover),
+                item.isRemote 
+                    ? Image.network(item.url!, fit: BoxFit.cover, 
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(child: CircularProgressIndicator(value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null));
+                        })
+                    : Image.file(File(item.imagePath), fit: BoxFit.cover),
                 if (item.caption != null && item.caption!.isNotEmpty)
                   Positioned(
                     bottom: 0,

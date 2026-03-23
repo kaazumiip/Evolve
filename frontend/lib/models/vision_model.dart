@@ -7,6 +7,8 @@ class VisionItem {
   double height;
   double rotation;
   String? caption;
+  bool isRemote;
+  String? url;
 
   VisionItem({
     required this.id,
@@ -17,6 +19,8 @@ class VisionItem {
     this.height = 150,
     this.rotation = 0,
     this.caption,
+    this.isRemote = false,
+    this.url,
   });
 
   // convert to JSON
@@ -29,6 +33,8 @@ class VisionItem {
     'height': height,
     'rotation': rotation,
     'caption': caption,
+    'isRemote': isRemote,
+    'url': url,
   };
 
   // ✅ from JSON
@@ -36,12 +42,14 @@ class VisionItem {
     return VisionItem(
       id: json['id'],
       imagePath: json['imagePath'],
-      x: json['x'],
-      y: json['y'],
-      width: json['width'],
-      height: json['height'],
-      rotation: json['rotation'],
+      x: json['x'].toDouble(),
+      y: json['y'].toDouble(),
+      width: json['width'].toDouble(),
+      height: json['height'].toDouble(),
+      rotation: json['rotation'].toDouble(),
       caption: json['caption'],
+      isRemote: json['isRemote'] ?? false,
+      url: json['url'],
     );
   }
 }
