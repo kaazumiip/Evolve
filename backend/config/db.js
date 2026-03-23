@@ -1,5 +1,11 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
+const dns = require('dns');
+
+// Force IPv4 DNS resolution for newer Node.js versions (fixes Railway ENOTFOUND issues)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const config = {
   host: process.env.DB_HOST,
