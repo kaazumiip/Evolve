@@ -655,7 +655,7 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                                 _isDragging = true;
                               });
                             },
-                            onDragEnd: (index) {
+                            dragEndIndex: (index) {
                               setState(() {
                                 _isDragging = false;
                                 _isOverDelete = false;
@@ -672,7 +672,7 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                             bottom: 30,
                             left: 0,
                             right: 0,
-                            child: DragTarget<ReorderableEntity>(
+                            child: DragTarget<ReorderableEntityData>(
                               onWillAcceptWithDetails: (details) {
                                 setState(() => _isOverDelete = true);
                                 return true;
