@@ -164,6 +164,10 @@ exports.sendFriendRequest = async (req, res) => {
             }
         } catch (pushErr) {
             console.warn('Push notification for friend request failed:', pushErr.message);
+            if (pushErr.code === 'messaging/registration-token-not-registered' || pushErr.message.toLowerCase().includes('not found')) {
+                await db.execute('UPDATE users SET fcm_token = NULL WHERE id = ?', [receiverId]);
+                console.log(`Cleaned up invalid FCM token for user ${receiverId}`);
+            }
         }
 
     } catch (err) {
@@ -220,6 +224,10 @@ exports.acceptFriendRequest = async (req, res) => {
             }
         } catch (notifyErr) {
             console.error('Error sending friend acceptance notification:', notifyErr.message);
+            if (notifyErr.code === 'messaging/registration-token-not-registered' || notifyErr.message.toLowerCase().includes('not found')) {
+                await db.execute('UPDATE users SET fcm_token = NULL WHERE id = ?', [requesterId]);
+                console.log(`Cleaned up invalid FCM token for user ${requesterId}`);
+            }
         }
 
         res.json({ msg: 'Friend request accepted' });

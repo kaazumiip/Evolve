@@ -212,6 +212,7 @@ exports.sendMessage = async (req, res) => {
         const finalMsg = msg[0];
 
         // Send Push Notification
+        let recipientId = null;
         try {
             const [recipientRows] = await db.execute(`
                 SELECT u.id, u.fcm_token 
@@ -221,6 +222,7 @@ exports.sendMessage = async (req, res) => {
             `, [conversationId, req.user.id]);
 
             if (recipientRows.length > 0 && recipientRows[0].fcm_token) {
+                recipientId = recipientRows[0].id;
                 const message = {
                     notification: {
                         title: `${finalMsg.senderName}`,
@@ -240,6 +242,12 @@ exports.sendMessage = async (req, res) => {
             }
         } catch (pushErr) {
             console.warn('Push notification failed:', pushErr.message);
+            if (pushErr.code === 'messaging/registration-token-not-registered' || pushErr.message.toLowerCase().includes('not found')) {
+                if (recipientId) {
+                    await db.execute('UPDATE users SET fcm_token = NULL WHERE id = ?', [recipientId]);
+                    console.log(`Cleaned up invalid FCM token for user ${recipientId}`);
+                }
+            }
         }
 
         res.json(finalMsg);

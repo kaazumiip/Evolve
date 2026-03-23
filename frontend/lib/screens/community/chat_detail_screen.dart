@@ -1333,13 +1333,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     // Try multiple possible field names for content due to backend variations
     final content = message['content'] ?? message['Content'] ?? message['message_text'] ?? message['text'];
     final mediaUrl = message['media_url'] ?? message['image_url'];
-    final isImage = type == 'image' && mediaUrl != null;
+    final isImage = type == 'image' && (mediaUrl != null || message['media_gallery'] != null);
     
     final bool isEmojiOnly = type == 'text' && content != null && _isOnlyEmoji(content);
     final bool isSticker = type == 'sticker';
     
     // Bubble is skipped for images, videos, voice, stickers, and emoji-only messages
-    final isNoBubble = isImage || type == 'video' || type == 'voice' || isSticker || isEmojiOnly;
+    final isNoBubble = isImage || type == 'video' || type == 'voice' || isSticker || isEmojiOnly || type == 'gif';
     final isReply = message['reply_to_id'] != null || message['replyToContent'] != null;
 
     return GestureDetector(
@@ -1375,16 +1375,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ],
             if (isImage) ...[
                if (message['media_gallery'] != null)
-                 _buildImageGallery(message['media_gallery'])
+                 _buildImageGallery(message['media_gallery'], isMe)
                else
-                 _buildImageContent(mediaUrl!),
+                 _buildImageContent(mediaUrl!, isMe: isMe),
             ],
             if (type == 'video' && mediaUrl != null)
-               _buildVideoContent(mediaUrl),
+               _buildVideoContent(mediaUrl, isMe),
             if (type == 'file' && mediaUrl != null)
                _buildFileContent(mediaUrl, content ?? 'File'),
             if (type == 'gif' && mediaUrl != null)
-               _buildGifContent(mediaUrl),
+               _buildGifContent(mediaUrl, isMe),
             if (type == 'voice' && mediaUrl != null)
                _buildVoiceContent(mediaUrl, isMe),
 
@@ -1458,7 +1458,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildImageGallery(dynamic galleryData) {
+  Widget _buildImageGallery(dynamic galleryData, bool isMe) {
     List<String> urls = [];
     if (galleryData is List) {
       urls = List<String>.from(galleryData);
@@ -1470,6 +1470,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     if (urls.isEmpty) return const SizedBox.shrink();
 
+    if (urls.length == 1) {
+      return _buildImageContent(urls[0], isMe: isMe);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1479,7 +1483,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             scrollDirection: Axis.horizontal,
             itemCount: urls.length,
             separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemBuilder: (context, index) => _buildImageContent(urls[index], width: 200),
+            itemBuilder: (context, index) => _buildImageContent(urls[index], width: 220, isMe: isMe),
           ),
         ),
         const SizedBox(height: 4),
@@ -1494,14 +1498,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildImageContent(String url, {double? width}) {
+  Widget _buildImageContent(String url, {double? width, bool isMe = false}) {
     return GestureDetector(
       onTap: () => _showFullScreenImage(url),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(24),
+          topRight: const Radius.circular(24),
+          bottomLeft: Radius.circular(isMe ? 24 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 24),
+        ),
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: width ?? MediaQuery.of(context).size.width * 0.7,
+            maxWidth: width ?? MediaQuery.of(context).size.width * 0.75,
             maxHeight: 350,
           ),
           child: Image.network(
@@ -1543,14 +1552,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildVideoContent(String url) {
+  Widget _buildVideoContent(String url, bool isMe) {
     return GestureDetector(
       onTap: () => _showFullScreenVideo(url),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(24),
+          topRight: const Radius.circular(24),
+          bottomLeft: Radius.circular(isMe ? 24 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 24),
+        ),
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.7, 
+            maxWidth: MediaQuery.of(context).size.width * 0.75, 
             maxHeight: 300,
           ),
           child: Stack(
@@ -1635,12 +1649,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
 
-  Widget _buildGifContent(String url) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.network(
-        url,
-        fit: BoxFit.cover,
+  Widget _buildGifContent(String url, bool isMe) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.75,
+      child: ClipRRect(
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(24),
+          topRight: const Radius.circular(24),
+          bottomLeft: Radius.circular(isMe ? 24 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 24),
+        ),
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return Container(
@@ -1659,7 +1680,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           );
         },
       ),
-    );
+    ));
   }
 
   Widget _buildStickerContent(String url) {
