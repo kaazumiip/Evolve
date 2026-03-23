@@ -684,8 +684,9 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                                   _isDragging = false;
                                   _isOverDelete = false;
                                   _saveItems();
-                                });
-                                HapticFeedback.heavyImpact();
+                                  });
+                                  HapticFeedback.heavyImpact();
+                                }
                               },
                               builder: (context, candidateData, rejectedData) {
                                 return AnimatedContainer(
