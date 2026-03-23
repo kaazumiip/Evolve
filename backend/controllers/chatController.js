@@ -188,11 +188,11 @@ exports.sendMessage = async (req, res) => {
         }
 
         const [result] = await db.execute(
-            'INSERT INTO messages (conversation_id, sender_id, content, image_url, media_url, type, reply_to_id, media_gallery) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO messages (conversation_id, sender_id, content, image_url, media_url, type, reply_to_id, media_gallery, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR))',
             [conversationId, userId, content || null, image_url || null, media_url || null, type || 'text', reply_to_id || null, media_gallery ? JSON.stringify(media_gallery) : null]
         );
 
-        await db.execute('UPDATE conversations SET updated_at = NOW() WHERE id = ?', [conversationId]);
+        await db.execute('UPDATE conversations SET updated_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR) WHERE id = ?', [conversationId]);
         
         // ... (rest of sendMessage logic)
 
