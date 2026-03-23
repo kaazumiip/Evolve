@@ -37,7 +37,7 @@ exports.getAIResponse = async (req, res) => {
         const response = await axios.post(
             "https://openrouter.ai/api/v1/chat/completions",
             {
-                model: "google/gemini-2.0-flash",
+                model: "google/gemini-2.0-flash-lite-001",
                 messages: [
                     { role: "system", content: systemPrompt },
                     ...messages.map(m => ({
