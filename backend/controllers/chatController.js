@@ -71,7 +71,7 @@ exports.startConversation = async (req, res) => {
         const [result] = await db.execute('INSERT INTO conversations (created_at, updated_at) VALUES (NOW(), NOW())'); 
         const conversationId = result.insertId;
 
-        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, updated_at) VALUES (?, ?, NOW()), (?, ?, NOW())',
+        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, NOW()), (?, ?, NOW())',
             [conversationId, userId, conversationId, targetUserId]
         );
 
