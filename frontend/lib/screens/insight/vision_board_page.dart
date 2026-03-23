@@ -265,7 +265,7 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
   void _onSearchChanged(String v) {
     setState(() => _searchQuery = v);
     _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () { // Reduced from 500ms to 300ms
       _searchPexels(v);
     });
   }
@@ -401,31 +401,53 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                     )
                   ],
                 ),
-                child: _isSearchingPexels 
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                      itemCount: _pexelsResults.length,
-                      itemBuilder: (ctx, i) {
-                        final photo = _pexelsResults[i];
-                        return GestureDetector(
-                          onTap: () => _addRemoteImage(photo),
-                          child: Container(
-                            width: 96,
-                            margin: const EdgeInsets.symmetric(horizontal: 6),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              image: DecorationImage(
-                                image: NetworkImage(photo['src']['tiny']),
-                                fit: BoxFit.cover,
+                child: Stack(
+                  children: [
+                    if (_pexelsResults.isNotEmpty)
+                      ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                        itemCount: _pexelsResults.length,
+                        itemBuilder: (ctx, i) {
+                          final photo = _pexelsResults[i];
+                          return GestureDetector(
+                            onTap: () => _addRemoteImage(photo),
+                            child: Container(
+                              width: 96,
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                image: DecorationImage(
+                                  image: NetworkImage(photo['src']['tiny']),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
+                              child: const Icon(Icons.add_circle, color: Colors.white70),
                             ),
-                            child: const Icon(Icons.add_circle, color: Colors.white70),
+                          );
+                        },
+                      )
+                    else if (!_isSearchingPexels && _searchQuery.isNotEmpty)
+                      Center(
+                        child: Text(
+                          "No inspirations found",
+                          style: TextStyle(color: isDark ? Colors.white38 : Colors.grey.shade400, fontSize: 13),
+                        ),
+                      ),
+                    if (_isSearchingPexels)
+                      Positioned(
+                        top: 0, left: 20, right: 20,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(primaryBlue),
+                            minHeight: 2,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
 
             const SizedBox(height: 16),
