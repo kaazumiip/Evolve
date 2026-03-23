@@ -275,6 +275,16 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getBlockedUsers() async {
+    try {
+      final response = await _dio.get('users/blocked');
+      return response.data;
+    } catch (e) {
+      print('Get Blocked Users Error: $e');
+      return [];
+    }
+  }
+
   Future<bool> updateSubscription(String planName) async {
     try {
       await _dio.put('users/subscription', data: {'planName': planName});

@@ -56,6 +56,11 @@ router.post('/unblock/:targetUserId', auth, userController.unblockUser);
 // @access  Private
 router.post('/report/:targetUserId', auth, userController.reportUser);
 
+// @route   GET /api/users/blocked
+// @desc    Get current user's blocked list
+// @access  Private
+router.get('/blocked', auth, userController.getBlockedUsers);
+
 router.put('/subscription', auth, userController.updateSubscription);
 
 module.exports = router;

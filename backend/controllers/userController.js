@@ -381,3 +381,21 @@ exports.reportUser = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+// Get blocked users list
+exports.getBlockedUsers = async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        const [blocked] = await db.execute(`
+            SELECT u.id, u.name, u.profile_picture 
+            FROM users u
+            JOIN user_blocks b ON u.id = b.blocked_id
+            WHERE b.blocker_id = ?
+        `, [userId]);
+
+        res.json(blocked);
+    } catch (err) {
+        console.error('Get Blocked Users Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+};

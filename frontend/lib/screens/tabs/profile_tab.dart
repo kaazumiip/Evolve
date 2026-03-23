@@ -7,6 +7,8 @@ import '../../services/community_service.dart';
 import '../interest_picker_screen.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
+import 'blocked_users_screen.dart';
+import 'account_privacy_screen.dart';
 import 'favorites_tab.dart';
 import 'pricing_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -484,9 +486,20 @@ class _ProfileTabState extends State<ProfileTab> {
               
               _buildSettingGroup([
                 _buildSettingTile(
-                  icon: Icons.person_outline,
-                  title: AppLocalizations.of(context)!.editProfileInfo,
-                  onTap: () => _showEditProfilePage(context),
+                  icon: Icons.security_rounded,
+                  title: 'Edit account privacy',
+                  subtitle: 'Profile info, Password, Blocked list',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AccountPrivacyScreen(
+                          userData: widget.userData,
+                          onUpdate: () => widget.onRefresh?.call(),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 _buildSettingTile(
                   icon: Icons.workspace_premium_outlined,
@@ -498,11 +511,6 @@ class _ProfileTabState extends State<ProfileTab> {
                       MaterialPageRoute(builder: (context) => PricingScreen()),
                     );
                   },
-                ),
-                _buildSettingTile(
-                  icon: Icons.lock_outline,
-                  title: AppLocalizations.of(context)!.changePassword,
-                  onTap: () => _showChangePasswordPage(context),
                 ),
                 _buildSettingTile(
                   icon: Icons.logout,
