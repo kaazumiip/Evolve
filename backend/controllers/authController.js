@@ -338,7 +338,18 @@ exports.googleNativeLogin = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Google Native Login Error:', err.message);
+        let expectedAudience = "Unknown";
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.decode(token);
+            expectedAudience = decoded ? decoded.aud : "Failed to decode";
+        } catch(e) {}
+        
+        console.error('--- GOOGLE AUTH CRASH DETAILS ---');
+        console.error('Error Message:', err.message);
+        console.error('Your Railway Env GOOGLE_CLIENT_ID is:', process.env.GOOGLE_CLIENT_ID);
+        console.error('BUT Google says the Token belongs to:', expectedAudience);
+        console.error('-----------------------------------');
         res.status(401).json({ msg: 'Invalid Token' });
     }
 };
