@@ -204,9 +204,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _titleController,
@@ -219,26 +220,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
             const Divider(),
             
-            // Expanded body ensures it takes up most of the space!
-            Expanded(
-              child: TextField(
-                controller: _bodyController,
-                maxLines: null,
-                expands: true, // Takes available space
-                textAlignVertical: TextAlignVertical.top,
-                style: GoogleFonts.outfit(fontSize: 16, color: isDark ? Colors.white70 : const Color(0xFF334155), height: 1.6),
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.whatsOnYourMind,
-                  hintStyle: GoogleFonts.outfit(color: const Color(0xFF94A3B8)),
-                  border: InputBorder.none,
-                ),
+            // Replaced Expanded with minLines to avoid overlap issues with the keyboard!
+            TextField(
+              controller: _bodyController,
+              maxLines: null,
+              minLines: 8,
+              textAlignVertical: TextAlignVertical.top,
+              style: GoogleFonts.outfit(fontSize: 16, color: isDark ? Colors.white70 : const Color(0xFF334155), height: 1.6),
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.whatsOnYourMind,
+                hintStyle: GoogleFonts.outfit(color: const Color(0xFF94A3B8)),
+                border: InputBorder.none,
               ),
             ),
             
             // Always show Media Pickers
             // Media Preview
             if (_selectedMediaItems.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               SizedBox(
                 height: 100,
                 child: ListView.builder(
@@ -281,7 +280,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
             ],
               
-            const SizedBox(height: 50),
+            const SizedBox(height: 30),
             
             // Post Actions Toolbar
             Container(
@@ -313,6 +312,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (_tags.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: _tags.map((tag) => Chip(
+                      label: Text(tag),
+                      onDeleted: () => _removeTag(tag),
+                      backgroundColor: kPrimaryBlue(context).withOpacity(0.1),
+                      labelStyle: TextStyle(color: kPrimaryBlue(context)),
+                      deleteIconColor: kPrimaryBlue(context),
+                      side: BorderSide.none,
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
                 TextField(
                   controller: _tagController,
                   onSubmitted: (_) => _addTag(),
@@ -326,54 +341,38 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: kPrimaryBlue(context))),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 
                 // Recommended Tags
-                if (_tags.isEmpty) ...[
-                  Text(AppLocalizations.of(context)!.recommendedTags, style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF94A3B8))),
-                  const SizedBox(height: 12),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _recommendedTags.map((tag) => InkWell(
-                        onTap: () {
-                          setState(() {
-                            if (!_tags.contains(tag)) _tags.add(tag);
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          child: Text(
-                            '#${tag.toLowerCase()}',
-                            style: GoogleFonts.outfit(
-                              color: kPrimaryBlue(context),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
+                Text(AppLocalizations.of(context)!.recommendedTags, style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF94A3B8))),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _recommendedTags.map((tag) => InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (!_tags.contains(tag)) _tags.add(tag);
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Text(
+                          '#${tag.toLowerCase()}',
+                          style: GoogleFonts.outfit(
+                            color: kPrimaryBlue(context),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
                         ),
-                      )).toList(),
-                    ),
-                  ),
-                ],
-
-                if (_tags.isNotEmpty)
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: _tags.map((tag) => Chip(
-                      label: Text(tag),
-                      onDeleted: () => _removeTag(tag),
-                      backgroundColor: kPrimaryBlue(context).withOpacity(0.1),
-                      labelStyle: TextStyle(color: kPrimaryBlue(context)),
-                      deleteIconColor: kPrimaryBlue(context),
-                      side: BorderSide.none,
+                      ),
                     )).toList(),
                   ),
+                ),
               ],
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 40),
           ],
         ),
       ),
