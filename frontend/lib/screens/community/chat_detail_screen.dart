@@ -58,7 +58,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   int? _currentUserId;
   bool _isLoading = true;
   bool _isSending = false;
-  File? _selectedImage;
+  List<File> _selectedImages = [];
   File? _selectedVideo;
   String? _recordingPath;
   bool _isRecording = false;
@@ -214,10 +214,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+    final List<XFile> pickedFiles = await picker.pickMultiImage();
+    if (pickedFiles.isNotEmpty) {
       setState(() {
-        _selectedImage = File(pickedFile.path);
+        _selectedImages.addAll(pickedFiles.map((f) => File(f.path)));
       });
     }
   }
@@ -227,7 +227,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
       setState(() {
-        _selectedImage = File(pickedFile.path);
+        _selectedImages.add(File(pickedFile.path));
       });
     }
   }
@@ -740,7 +740,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _sendMessage() async {
-    if (_messageController.text.trim().isEmpty && _selectedImage == null && _selectedVideo == null) return;
+    if (_messageController.text.trim().isEmpty && _selectedImages.isEmpty && _selectedVideo == null) return;
     
     if (_editingMessage != null) {
       final newContent = _messageController.text.trim();
@@ -761,23 +761,47 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       return;
     }
 
-    final type = _selectedVideo != null ? 'video' : (_selectedImage != null ? 'image' : 'text');
-    final mediaFile = _selectedVideo ?? _selectedImage;
+    final videoFile = _selectedVideo;
+    final imageFiles = List<File>.from(_selectedImages);
     final content = _messageController.text.trim();
     final replyId = _replyingTo?['id'];
 
     _messageController.clear();
     setState(() {
-      _selectedImage = null;
+      _selectedImages = [];
       _selectedVideo = null;
     });
 
-    await _sendRichMessage(
-      type: type,
-      content: content,
-      mediaFile: mediaFile,
-      replyToId: replyId,
-    );
+    if (videoFile != null) {
+      await _sendRichMessage(
+        type: 'video',
+        content: content,
+        mediaFile: videoFile,
+        replyToId: replyId,
+      );
+    } else if (imageFiles.isNotEmpty) {
+      // Send first image with content
+      await _sendRichMessage(
+        type: 'image',
+        content: content,
+        mediaFile: imageFiles[0],
+        replyToId: replyId,
+      );
+      // Send subsequent images
+      for (int i = 1; i < imageFiles.length; i++) {
+        await _sendRichMessage(
+          type: 'image',
+          content: '',
+          mediaFile: imageFiles[i],
+        );
+      }
+    } else {
+      await _sendRichMessage(
+        type: 'text',
+        content: content,
+        replyToId: replyId,
+      );
+    }
   }
 
   @override
@@ -891,8 +915,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               },
             ),
           ),
-          if (_selectedImage != null || _selectedVideo != null)
-            _buildAttachmentPreview(),
           _buildMessageInput(),
         ],
       ),
@@ -943,7 +965,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (_replyingTo != null) _buildReplyPreview(),
-        if (_selectedImage != null || _selectedVideo != null) _buildAttachmentPreview(),
+        if (_selectedImages.isNotEmpty || _selectedVideo != null) _buildAttachmentPreview(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 80), // Elevated significantly as requested
           child: Container(
@@ -1049,7 +1071,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     icon: Icon(Icons.send, color: kPrimaryBlue(context)),
                     onPressed: () => _stopRecording(shouldSend: true),
                   )
-                else if (_messageController.text.isNotEmpty || _selectedImage != null || _selectedVideo != null)
+                else if (_messageController.text.isNotEmpty || _selectedImages.isNotEmpty || _selectedVideo != null)
                   IconButton(
                     icon: Icon(
                       _editingMessage != null ? Icons.check_circle : Icons.send, 
@@ -1088,20 +1110,59 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Widget _buildAttachmentPreview() {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Colors.grey.shade50,
-      child: Stack(
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.grey.shade50,
+        border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: _selectedImage != null 
-              ? Image.file(_selectedImage!, height: 80, width: 80, fit: BoxFit.cover)
-              : Container(height: 80, width: 80, color: Colors.black12, child: const Icon(Icons.video_file)),
+          Row(
+            children: [
+              Text(
+                _selectedVideo != null ? "Video selected" : "${_selectedImages.length} images selected",
+                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() { _selectedImages = []; _selectedVideo = null; }),
+                child: const Icon(Icons.close_rounded, size: 20, color: Colors.grey),
+              ),
+            ],
           ),
-          Positioned(
-            top: 2, right: 2,
-            child: GestureDetector(
-              onTap: () => setState(() { _selectedImage = null; _selectedVideo = null; }),
-              child: const CircleAvatar(radius: 10, backgroundColor: Colors.white, child: Icon(Icons.close, size: 14)),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 80,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _selectedVideo != null ? 1 : _selectedImages.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                return Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: _selectedVideo != null 
+                        ? Container(
+                           width: 80, 
+                           height: 80, 
+                           color: Colors.black, 
+                           child: const Icon(Icons.videocam_rounded, color: Colors.white)
+                          )
+                        : Image.file(_selectedImages[index], height: 80, width: 80, fit: BoxFit.cover),
+                    ),
+                    if (_selectedVideo == null)
+                      Positioned(
+                        top: 2, right: 2,
+                        child: GestureDetector(
+                          onTap: () => setState(() { _selectedImages.removeAt(index); }),
+                          child: const CircleAvatar(radius: 10, backgroundColor: Colors.white, child: Icon(Icons.close, size: 14, color: Colors.black)),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ],
