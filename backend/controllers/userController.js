@@ -111,7 +111,7 @@ exports.sendFriendRequest = async (req, res) => {
 
         // Also add a system notification
         await db.execute(
-            'INSERT INTO notifications (user_id, sender_id, type, created_at) VALUES (?, ?, ?, GETDATE())',
+            'INSERT INTO notifications (user_id, sender_id, type, created_at) VALUES (?, ?, ?, NOW())',
             [receiverId, requesterId, 'friend_request']
         );
 
@@ -171,7 +171,7 @@ exports.acceptFriendRequest = async (req, res) => {
         // Notify the requester that their request was accepted
         try {
             await db.execute(
-                'INSERT INTO notifications (user_id, sender_id, type, created_at) VALUES (?, ?, ?, GETDATE())',
+                'INSERT INTO notifications (user_id, sender_id, type, created_at) VALUES (?, ?, ?, NOW())',
                 [requesterId, receiverId, 'friend_accepted']
             );
 

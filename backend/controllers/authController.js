@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const [result] = await db.execute(
-            'INSERT INTO users (name, email, password, is_password_set) VALUES (?, ?, ?, ?)',
+            'INSERT INTO users (name, email, password, is_password_set, last_seen) VALUES (?, ?, ?, ?, NOW())',
             [name, email, hashedPassword, 1]
         );
 
