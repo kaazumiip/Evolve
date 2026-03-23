@@ -111,7 +111,7 @@ async function getPool() {
   if (poolInstance) return poolInstance;
   
   await ensureDatabaseExists();
-  poolInstance = mysql.createPool(config);
+  poolInstance = mysql.createPool(poolConnectionConfig); // Use the processed config
   return poolInstance;
 }
 
