@@ -126,18 +126,12 @@ module.exports = {
       // USE query() instead of execute() for LIMIT/OFFSET
       // MySQL Prepared Statements (execute) can be restrictive with LIMIT parameters
       if (translatedQuery.toUpperCase().includes('LIMIT')) {
-        const [rows] = await pool.query(translatedQuery, sanitizedParams);
-        if (translatedQuery.trim().toUpperCase().startsWith('INSERT')) {
-          return [{ insertId: rows.insertId, affectedRows: rows.affectedRows }, null];
-        }
-        return [rows, null];
+        const [rows, fields] = await pool.query(translatedQuery, sanitizedParams);
+        return [rows, fields];
       }
 
-      const [rows] = await pool.execute(translatedQuery, sanitizedParams);
-      if (translatedQuery.trim().toUpperCase().startsWith('INSERT')) {
-        return [{ insertId: rows.insertId, affectedRows: rows.affectedRows }, null];
-      }
-      return [rows, null];
+      const [rows, fields] = await pool.execute(translatedQuery, sanitizedParams);
+      return [rows, fields];
     } catch (err) {
       console.error('Database Query Error:', err);
       throw err;
@@ -162,18 +156,12 @@ module.exports = {
 
         // Use query() for LIMIT in transactions too
         if (translatedQuery.toUpperCase().includes('LIMIT')) {
-          const [rows] = await connection.query(translatedQuery, sanitizedParams);
-          if (translatedQuery.trim().toUpperCase().startsWith('INSERT')) {
-            return [{ insertId: rows.insertId, affectedRows: rows.affectedRows }, null];
-          }
-          return [rows, null];
+          const [rows, fields] = await connection.query(translatedQuery, sanitizedParams);
+          return [rows, fields];
         }
 
-        const [rows] = await connection.execute(translatedQuery, sanitizedParams);
-        if (translatedQuery.trim().toUpperCase().startsWith('INSERT')) {
-          return [{ insertId: rows.insertId, affectedRows: rows.affectedRows }, null];
-        }
-        return [rows, null];
+        const [rows, fields] = await connection.execute(translatedQuery, sanitizedParams);
+        return [rows, fields];
       },
       query: async (query, params = []) => {
         return module.exports.execute(query, params);
