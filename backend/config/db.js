@@ -2,7 +2,19 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 const dns = require('dns');
 
-// Force IPv4 DNS resolution for newer Node.js versions (fixes Railway ENOTFOUND issues)
+// CRITICAL FIX: Force Global IPv4 DNS Lookups (Solves Railway Database AND Email ESOCKET/ENOTFOUND)
+const originalLookup = dns.lookup;
+dns.lookup = function (hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  options = options || {};
+  options.family = 4; // ALWAYS FORCE IPv4
+  return originalLookup(hostname, options, callback);
+};
+
+// Also set the result order for newer Node environments
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }
