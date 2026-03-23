@@ -114,8 +114,8 @@ exports.sendFriendRequest = async (req, res) => {
         const conversationId = conversationResult.insertId;
 
         // Add participants to the conversation
-        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())', [conversationId, requesterId]);
-        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())', [conversationId, receiverId]);
+        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, updated_at) VALUES (?, ?, NOW())', [conversationId, requesterId]);
+        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, updated_at) VALUES (?, ?, NOW())', [conversationId, receiverId]);
 
         // Also add a system notification
         await db.execute(
