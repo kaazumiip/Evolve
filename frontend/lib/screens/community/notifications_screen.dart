@@ -77,15 +77,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   String _getNotificationMessage(Map<String, dynamic> notification) {
     String senderName = notification['senderName'] ?? 'Someone';
+    String postTitle = notification['postTitle'] != null ? ' in "${notification['postTitle']}"' : '';
+    String postTitleEnd = notification['postTitle'] != null ? ': "${notification['postTitle']}"' : '';
+
     switch (notification['type']) {
       case 'like_post':
-        return AppLocalizations.of(context)!.likedYourPost(senderName);
+      case 'like':
+        return '$senderName liked your post$postTitleEnd.';
       case 'comment':
-        return AppLocalizations.of(context)!.commentedOnYourPost(senderName);
+        return '$senderName commented on your post$postTitleEnd.';
       case 'like_comment':
-        return AppLocalizations.of(context)!.likedYourComment(senderName);
+        return '$senderName liked your comment$postTitle.';
       case 'reply':
-        return AppLocalizations.of(context)!.repliedToYourComment(senderName);
+        return '$senderName replied to your comment$postTitle.';
       case 'friend_request':
         return AppLocalizations.of(context)!.sentYouAFriendRequestTapToRespond(senderName);
       case 'friend_accepted':

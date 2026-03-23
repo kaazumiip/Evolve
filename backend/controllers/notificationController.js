@@ -10,9 +10,11 @@ exports.getNotifications = async (req, res) => {
             SELECT 
                 n.*, 
                 u.name as senderName, 
-                u.profile_picture as senderImage
+                u.profile_picture as senderImage,
+                p.title as postTitle
             FROM notifications n
             JOIN users u ON n.sender_id = u.id
+            LEFT JOIN posts p ON n.post_id = p.id
             WHERE n.user_id = ?
             ORDER BY n.created_at DESC
         `, [userId]);

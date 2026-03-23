@@ -150,14 +150,24 @@ exports.addComment = async (req, res) => {
             let notifyTitle = 'New Comment';
             let notifyBody = `${comment[0].userName} commented on your post`;
             if (parent_id) {
-                const [parentComm] = await db.execute('SELECT user_id FROM comments WHERE id = ?', [parent_id]);
+                const [parentComm] = await db.execute(`
+                    SELECT c.user_id, p.title as postTitle 
+                    FROM comments c 
+                    JOIN posts p ON c.post_id = p.id 
+                    WHERE c.id = ?`, [parent_id]);
                 if (parentComm.length > 0) {
                     targetUserId = parentComm[0].user_id;
                     notifyType = 'reply';
+                    notifyTitle = comment[0].userName;
+                    notifyBody = `replied to your comment in "${parentComm[0].postTitle.substring(0, 30)}${parentComm[0].postTitle.length > 30 ? '...' : ''}"`;
                 }
             } else {
-                const [targetPost] = await db.execute('SELECT user_id FROM posts WHERE id = ?', [postId]);
-                if (targetPost.length > 0) targetUserId = targetPost[0].user_id;
+                const [targetPost] = await db.execute('SELECT user_id, title FROM posts WHERE id = ?', [postId]);
+                if (targetPost.length > 0) {
+                    targetUserId = targetPost[0].user_id;
+                    notifyTitle = comment[0].userName;
+                    notifyBody = `commented on your post: "${targetPost[0].title.substring(0, 30)}${targetPost[0].title.length > 30 ? '...' : ''}"`;
+                }
             }
             if (targetUserId && targetUserId !== req.user.id) {
                 await db.execute(
@@ -264,8 +274,8 @@ exports.toggleLike = async (req, res) => {
                     if (targetUser.length > 0 && targetUser[0].fcm_token) {
                         const message = {
                             notification: {
-                                title: 'New Like',
-                                body: `${sender.name} liked your post: ${post[0].title.substring(0, 20)}...`
+                                title: sender.name,
+                                body: `liked your post: "${post[0].title.substring(0, 30)}${post[0].title.length > 30 ? '...' : ''}"`
                             },
                             data: {
                                 type: 'like',
@@ -302,10 +312,15 @@ exports.toggleCommentLike = async (req, res) => {
             
             // Push Notification for Comment Like
             try {
-                const [comm] = await db.execute('SELECT user_id, post_id FROM comments WHERE id = ?', [commentId]);
+                const [comm] = await db.execute(`
+                    SELECT c.user_id, c.post_id, p.title as postTitle 
+                    FROM comments c 
+                    JOIN posts p ON c.post_id = p.id 
+                    WHERE c.id = ?`, [commentId]);
                 if (comm.length > 0 && comm[0].user_id !== userId) {
                     const targetUserId = comm[0].user_id;
                     const postId = comm[0].post_id;
+                    const postTitle = comm[0].postTitle ? ` in "${comm[0].postTitle.substring(0, 20)}${comm[0].postTitle.length > 20 ? '...' : ''}"` : '';
                     const [[sender]] = await db.execute('SELECT name, profile_picture FROM users WHERE id = ?', [userId]);
                     
                     // Insert DB notification
@@ -318,8 +333,8 @@ exports.toggleCommentLike = async (req, res) => {
                     if (targetUser.length > 0 && targetUser[0].fcm_token) {
                         const message = {
                             notification: {
-                                title: 'New Comment Like',
-                                body: `${sender.name} liked your comment`
+                                title: sender.name,
+                                body: `liked your comment${postTitle}`
                             },
                             data: {
                                 type: 'like_comment',
