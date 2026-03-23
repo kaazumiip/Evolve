@@ -409,7 +409,7 @@ exports.facebookLogin = async (req, res) => {
         });
     } catch (err) {
         console.error('Facebook Login Error:', err.message);
-        res.status(401).json({ msg: 'Invalid Facebook Token' });
+        res.status(401).json({ msg: err.message });
     }
 };
 
