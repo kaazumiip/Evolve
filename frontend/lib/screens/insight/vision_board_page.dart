@@ -655,12 +655,6 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                                 _isDragging = true;
                               });
                             },
-                            onDragEnd: (index) {
-                              setState(() {
-                                _isDragging = false;
-                                _isOverDelete = false;
-                              });
-                            },
                             itemBuilder: (ctx, i) => Container(
                               key: ValueKey(filtered[i].id),
                               child: _buildCard(filtered[i]),
@@ -672,7 +666,7 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                             bottom: 30,
                             left: 0,
                             right: 0,
-                            child: DragTarget<ReorderableEntity>(
+                            child: DragTarget<dynamic>(
                               onWillAccept: (data) {
                                 setState(() => _isOverDelete = true);
                                 return true;
@@ -680,9 +674,11 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                               onLeave: (data) {
                                 setState(() => _isOverDelete = false);
                               },
-                              onAccept: (ReorderableEntity data) {
-                                // Find the item by id from the entity
-                                final String draggedId = (data.key as ValueKey).value;
+                              onAccept: (data) {
+                                // Find the item by id from the data
+                                // In this version, data is the ReorderableItemView but we cast carefully
+                                final String? draggedId = (data is ReorderableItemView) ? (data.key as ValueKey).value : null;
+                                if (draggedId != null) {
                                 setState(() {
                                   _items.removeWhere((item) => item.id == draggedId);
                                   _isDragging = false;
