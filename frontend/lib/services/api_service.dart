@@ -15,7 +15,7 @@ class ApiService {
   static const String _usbHost = '127.0.0.1';    // Use when connected via USB (adb reverse tcp:5000 tcp:5000)
 
 
-  static const String baseUrl = 'https://evolve-rv6a.onrender.com/api/'; 
+  static const String baseUrl = 'https://evolve-production-4971.up.railway.app/api/'; 
   // static const String baseUrl = 'http://192.168.1.5:5000/api/'; 
 
   
