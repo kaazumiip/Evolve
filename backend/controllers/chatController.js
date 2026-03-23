@@ -102,12 +102,12 @@ exports.startConversation = async (req, res) => {
 
         // Create new conversation
         const [result] = await db.execute(
-            'INSERT INTO conversations (created_at, updated_at, status, archived_by) VALUES (NOW(), NOW(), ?, ?)',
+            'INSERT INTO conversations (created_at, updated_at, status, archived_by) VALUES (DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR), DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR), ?, ?)',
             [status, archivedBy]
         ); 
         const conversationId = result.insertId;
 
-        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, NOW()), (?, ?, NOW())',
+        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR)), (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR))',
             [conversationId, userId, targetUserId]
         );
 
