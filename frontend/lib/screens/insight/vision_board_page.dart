@@ -231,196 +231,6 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
     });
   }
 
-  // ── long-press edit ──
-  void _openEditSheet(VisionItem item) {
-    final captionCtrl = TextEditingController(text: item.caption ?? '');
-    double tempW = item.width;
-    double tempH = item.height;
-    double tempRot = item.rotation;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(AppLocalizations.of(context)!.editCard,
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.grey.shade800)),
-              const SizedBox(height: 20),
-
-              Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(File(item.imagePath),
-                      width: 120, height: 120, fit: BoxFit.cover),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              _sliderRow(
-                  label: AppLocalizations.of(context)!.width,
-                  value: tempW,
-                  min: 80,
-                  max: 320,
-                  onChanged: (v) => setSheetState(() => tempW = v)),
-              _sliderRow(
-                  label: AppLocalizations.of(context)!.height,
-                  value: tempH,
-                  min: 80,
-                  max: 320,
-                  onChanged: (v) => setSheetState(() => tempH = v)),
-              _sliderRow(
-                  label: AppLocalizations.of(context)!.rotation,
-                  value: tempRot,
-                  min: -180,
-                  max: 180,
-                  onChanged: (v) => setSheetState(() => tempRot = v)),
-              const SizedBox(height: 12),
-
-              TextField(
-                controller: captionCtrl,
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)!.captionOptional,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: kBlue, width: 2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              Row(
-                children: [
-                  // STEP 6 — Delete + Save
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      // ⭐ FIXED: async + save after delete
-                      onPressed: () async {
-                        setState(() => _items.remove(item));
-                        await _saveItems(); // ⭐ SAVE
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      label: Text(AppLocalizations.of(context)!.delete,
-                          style: const TextStyle(color: Colors.red)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      // ⭐ FIXED: async + save after edit
-                      onPressed: () async {
-                        setState(() {
-                          item.width = tempW;
-                          item.height = tempH;
-                          item.rotation = tempRot;
-                          item.caption = captionCtrl.text.trim().isEmpty
-                              ? null
-                              : captionCtrl.text.trim();
-                        });
-                        await _saveItems(); // ⭐ SAVE
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kBlue,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: Text(AppLocalizations.of(context)!.save,
-                          style:
-                          const TextStyle(color: Colors.white, fontSize: 16)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _sliderRow({
-    required String label,
-    required double value,
-    required double min,
-    required double max,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Row(
-      children: [
-        SizedBox(
-            width: 70,
-            child: Text(label,
-                style:
-                TextStyle(fontSize: 13, color: Colors.grey.shade600))),
-        Expanded(
-          child: Slider(
-            value: value.clamp(min, max),
-            min: min,
-            max: max,
-            activeColor: kBlue,
-            onChanged: onChanged,
-          ),
-        ),
-        SizedBox(
-          width: 40,
-          child: Text(value.toStringAsFixed(0),
-              style: const TextStyle(fontSize: 12)),
-        ),
-      ],
-    );
-  }
-
-  Timer? _longPressTimer;
-
-  void _startLongPress(VisionItem item) {
-    _longPressTimer = Timer(const Duration(seconds: 5), () {
-      _openEditSheet(item);
-    });
-  }
-
-  void _cancelLongPress() {
-    _longPressTimer?.cancel();
-    _longPressTimer = null;
-  }
 
   Future<void> _searchPexels(String query) async {
     if (query.isEmpty) {
@@ -686,16 +496,30 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
                                 setState(() => _isOverDelete = false);
                               },
                               onAccept: (data) {
-                                // Find the item by id from the data
-                                // In this version, data is the ReorderableItemView but we cast carefully
-                                final String? draggedId = (data is ReorderableItemView) ? (data.key as ValueKey).value : null;
+                                String? draggedId;
+                                if (data is ReorderableItemView) {
+                                  draggedId = (data.key as ValueKey).value;
+                                } else if (data is Key) {
+                                  draggedId = (data as ValueKey).value;
+                                } else if (data is Map && data.containsKey('id')) {
+                                  draggedId = data['id'];
+                                } else if (data != null) {
+                                  // As a fallback, try to extract value if it's a ValueKey directly
+                                  try {
+                                    draggedId = (data as dynamic).key.value;
+                                  } catch (_) {
+                                    // Handle cases where data might be the entity itself
+                                    try { draggedId = (data as dynamic).id; } catch (_) {}
+                                  }
+                                }
+
                                 if (draggedId != null) {
-                                setState(() {
-                                  _items.removeWhere((item) => item.id == draggedId);
-                                  _isDragging = false;
-                                  _isOverDelete = false;
-                                  _saveItems();
+                                  setState(() {
+                                    _items.removeWhere((item) => item.id == draggedId);
+                                    _isDragging = false;
+                                    _isOverDelete = false;
                                   });
+                                  _saveItems();
                                   HapticFeedback.heavyImpact();
                                 }
                               },
@@ -742,78 +566,62 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
   }
 
   Widget _buildCard(VisionItem item) {
-    return GestureDetector(
-      onLongPress: () => _openEditSheet(item),
-      child: Transform.rotate(
-        angle: item.rotation * 3.14159 / 180,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                item.isRemote 
-                    ? Image.network(item.url!, fit: BoxFit.cover, 
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(child: CircularProgressIndicator(value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null));
-                        })
-                    : Image.file(File(item.imagePath), fit: BoxFit.cover),
-                if (item.caption != null && item.caption!.isNotEmpty)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.6),
-                            Colors.transparent
-                          ],
-                        ),
-                      ),
-                      child: Text(
-                        item.caption!,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
+    return Transform.rotate(
+      angle: item.rotation * 3.14159 / 180,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              item.isRemote 
+                  ? Image.network(item.url!, fit: BoxFit.cover, 
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(child: CircularProgressIndicator(value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null));
+                      })
+                  : Image.file(File(item.imagePath), fit: BoxFit.cover),
+              if (item.caption != null && item.caption!.isNotEmpty)
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(6),
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.6),
+                          Colors.transparent
+                        ],
+                      ),
                     ),
-                    child: const Icon(Icons.touch_app,
-                        color: Colors.white, size: 14),
+                    child: Text(
+                      item.caption!,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -846,7 +654,6 @@ class _VisionBoardPageState extends State<VisionBoardPage> {
   @override
   void dispose() {
     _searchCtrl.dispose();
-    _longPressTimer?.cancel();
     super.dispose();
   }
 }
