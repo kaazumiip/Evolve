@@ -1,6 +1,8 @@
 import 'package:app_links/app_links.dart';
 import 'dart:convert';
 import 'screens/community/chat_detail_screen.dart';
+import 'screens/community/user_profile_screen.dart';
+import 'screens/community/post_detail_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
@@ -96,6 +98,45 @@ class _MyAppState extends State<MyApp> {
               otherUserId: senderId,
               otherUserName: senderName,
               otherUserImage: imageUrl,
+            ),
+          ),
+        );
+      }
+    } else if ((finalData['type'] == 'comment' || finalData['type'] == 'reply' || finalData['type'] == 'like') && finalData['postId'] != null) {
+      final int postId = int.tryParse(finalData['postId'].toString()) ?? 0;
+      if (postId != 0 && _navigatorKey.currentState != null) {
+        _navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => PostDetailScreen(postData: {'id': postId}),
+          ),
+        );
+      }
+    } else if (finalData['type'] == 'friend_request' && (finalData['requesterId'] != null || finalData['senderId'] != null)) {
+      final int userId = int.tryParse((finalData['requesterId'] ?? finalData['senderId']).toString()) ?? 0;
+      final String userName = finalData['senderName'] ?? 'User';
+      final String userImage = finalData['imageUrl'] ?? '';
+      if (userId != 0 && _navigatorKey.currentState != null) {
+        _navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => UserProfileScreen(
+              userId: userId,
+              userName: userName,
+              userImage: userImage,
+            ),
+          ),
+        );
+      }
+    } else if (finalData['type'] == 'friend_accepted' && (finalData['accepterId'] != null || finalData['senderId'] != null)) {
+       final int userId = int.tryParse((finalData['accepterId'] ?? finalData['senderId']).toString()) ?? 0;
+       final String userName = finalData['senderName'] ?? 'User';
+       final String userImage = finalData['imageUrl'] ?? '';
+       if (userId != 0 && _navigatorKey.currentState != null) {
+        _navigatorKey.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => UserProfileScreen(
+              userId: userId,
+              userName: userName,
+              userImage: userImage,
             ),
           ),
         );

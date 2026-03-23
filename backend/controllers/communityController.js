@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const admin = require('../config/firebase');
 
 // Get all posts (feed)
 exports.getAllPosts = async (req, res) => {
@@ -163,8 +164,36 @@ exports.addComment = async (req, res) => {
                     'INSERT INTO notifications (user_id, sender_id, type, post_id, comment_id) VALUES (?, ?, ?, ?, ?)',
                     [targetUserId, req.user.id, notifyType, postId, parent_id || null]
                 );
+
+                // Push Notification
+                const [targetUser] = await db.execute('SELECT fcm_token FROM users WHERE id = ?', [targetUserId]);
+                if (targetUser.length > 0 && targetUser[0].fcm_token) {
+                    const message = {
+                        notification: {
+                            title: notifyTitle,
+                            body: notifyBody,
+                            image: comment[0].userImage || ''
+                        },
+                        data: {
+                            type: notifyType,
+                            postId: postId.toString(),
+                            senderName: comment[0].userName,
+                            imageUrl: comment[0].userImage || ''
+                        },
+                        token: targetUser[0].fcm_token
+                    };
+                    await admin.messaging().send(message);
+                }
             }
-        } catch (err) {}
+        } catch (err) {
+            if (err.code === 'messaging/registration-token-not-registered' || err.message.toLowerCase().includes('not found')) {
+                // Background cleanup if token is invalid
+                const [targetPost] = await db.execute('SELECT user_id FROM posts WHERE id = ?', [postId]);
+                if (targetPost.length > 0) {
+                   await db.execute('UPDATE users SET fcm_token = NULL WHERE id = ?', [targetPost[0].user_id]);
+                }
+            }
+        }
         res.json(comment[0]);
     } catch (err) {
         console.error(err.message);
@@ -217,6 +246,40 @@ exports.toggleLike = async (req, res) => {
             res.json({ liked: false });
         } else {
             await db.execute('INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)', [postId, userId]);
+            
+            // Push Notification for Like
+            try {
+                const [post] = await db.execute('SELECT user_id, title FROM posts WHERE id = ?', [postId]);
+                if (post.length > 0 && post[0].user_id !== userId) {
+                    const targetUserId = post[0].user_id;
+                    const [[sender]] = await db.execute('SELECT name, profile_picture FROM users WHERE id = ?', [userId]);
+                    
+                    // Insert DB notification
+                    await db.execute(
+                        'INSERT INTO notifications (user_id, sender_id, type, post_id) VALUES (?, ?, ?, ?)',
+                        [targetUserId, userId, 'like', postId]
+                    );
+
+                    const [targetUser] = await db.execute('SELECT fcm_token FROM users WHERE id = ?', [targetUserId]);
+                    if (targetUser.length > 0 && targetUser[0].fcm_token) {
+                        const message = {
+                            notification: {
+                                title: 'New Like',
+                                body: `${sender.name} liked your post: ${post[0].title.substring(0, 20)}...`
+                            },
+                            data: {
+                                type: 'like',
+                                postId: postId.toString(),
+                                senderName: sender.name,
+                                imageUrl: sender.profile_picture || ''
+                            },
+                            token: targetUser[0].fcm_token
+                        };
+                        await admin.messaging().send(message);
+                    }
+                }
+            } catch (notifyErr) {}
+            
             res.json({ liked: true });
         }
     } catch (err) {

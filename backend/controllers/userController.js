@@ -144,7 +144,7 @@ exports.sendFriendRequest = async (req, res) => {
 
         // Send FCM notification
         try {
-            const [users] = await db.execute('SELECT name FROM users WHERE id = ?', [requesterId]);
+            const [users] = await db.execute('SELECT name, profile_picture FROM users WHERE id = ?', [requesterId]);
             const [recipient] = await db.execute('SELECT fcm_token FROM users WHERE id = ?', [receiverId]);
             
             if (recipient.length > 0 && recipient[0].fcm_token && users.length > 0) {
@@ -156,7 +156,9 @@ exports.sendFriendRequest = async (req, res) => {
                     },
                     data: {
                         type: 'friend_request',
-                        requesterId: requesterId.toString()
+                        senderId: requesterId.toString(),
+                        senderName: requesterName,
+                        imageUrl: users[0].profile_picture || ''
                     },
                     token: recipient[0].fcm_token
                 };
@@ -215,7 +217,8 @@ exports.acceptFriendRequest = async (req, res) => {
                     },
                     data: {
                         type: 'friend_accepted',
-                        accepterId: receiverId.toString(),
+                        senderId: receiverId.toString(),
+                        senderName: accepter.name,
                         imageUrl: accepter.profile_picture || ''
                     },
                     token: recipient.fcm_token
