@@ -17,9 +17,11 @@ const config = {
 };
 
 // Use full DATABASE_URL if available (solves Railway DNS / IPv6 issues)
-const pool = process.env.DATABASE_URL 
-  ? mysql.createPool(process.env.DATABASE_URL) 
-  : mysql.createPool(config);
+const poolConnectionConfig = process.env.DATABASE_URL 
+  ? { uri: process.env.DATABASE_URL.replace('?ssl-mode=REQUIRED', ''), ssl: { rejectUnauthorized: false } }
+  : config;
+
+const pool = mysql.createPool(poolConnectionConfig);
 
 // Add a connection initialization to set timezone forcefully for each session
 pool.on('connection', (connection) => {
