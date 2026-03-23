@@ -1770,8 +1770,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (isoString == null) return '';
     try {
       var dateStr = isoString;
-      // The backend saves +7 time natively, but Node sends it as UTC ending in 'Z'.
-      // Strip 'Z' to parse it as local time and prevent double shifting.
+      // Strip 'Z' because backend native time is already stored in local +7 format
       if (dateStr.endsWith('Z')) {
         dateStr = dateStr.substring(0, dateStr.length - 1);
       }

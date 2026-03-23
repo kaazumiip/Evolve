@@ -101,12 +101,12 @@ exports.startConversation = async (req, res) => {
 
         // Create new conversation
         const [result] = await db.execute(
-            'INSERT INTO conversations (created_at, updated_at, status, archived_by) VALUES (UTC_TIMESTAMP(), UTC_TIMESTAMP(), ?, ?)',
+            'INSERT INTO conversations (created_at, updated_at, status, archived_by) VALUES (DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR), DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR), ?, ?)',
             [status, archivedBy]
         ); 
         const conversationId = result.insertId;
 
-        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, UTC_TIMESTAMP()), (?, ?, UTC_TIMESTAMP())',
+        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR)), (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR))',
             [conversationId, userId, conversationId, targetUserId]
         );
 
@@ -187,11 +187,11 @@ exports.sendMessage = async (req, res) => {
         }
 
         const [result] = await db.execute(
-            'INSERT INTO messages (conversation_id, sender_id, content, image_url, media_url, type, reply_to_id, media_gallery, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())',
+            'INSERT INTO messages (conversation_id, sender_id, content, image_url, media_url, type, reply_to_id, media_gallery, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR))',
             [conversationId, userId, content || null, image_url || null, media_url || null, type || 'text', reply_to_id || null, media_gallery ? JSON.stringify(media_gallery) : null]
         );
 
-        await db.execute('UPDATE conversations SET updated_at = UTC_TIMESTAMP() WHERE id = ?', [conversationId]);
+        await db.execute('UPDATE conversations SET updated_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR) WHERE id = ?', [conversationId]);
         
         // ... (rest of sendMessage logic)
 
