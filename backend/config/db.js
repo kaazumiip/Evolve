@@ -1,5 +1,11 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
+const dns = require('dns');
+
+// Force IPv4 DNS resolution for newer Node.js versions (fixes Railway ENOTFOUND issues)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const config = {
   host: process.env.DB_HOST,
@@ -16,7 +22,12 @@ const config = {
   timezone: '+07:00' // Ensure MySQL dates match local time (+07:00)
 };
 
-const pool = mysql.createPool(config);
+// Use full DATABASE_URL if available (solves Railway DNS / IPv6 issues)
+const poolConnectionConfig = process.env.DATABASE_URL 
+  ? { uri: process.env.DATABASE_URL.replace('?ssl-mode=REQUIRED', ''), ssl: { rejectUnauthorized: false } }
+  : config;
+
+const pool = mysql.createPool(poolConnectionConfig);
 
 // Add a connection initialization to set timezone forcefully for each session
 pool.on('connection', (connection) => {
