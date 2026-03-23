@@ -68,10 +68,10 @@ exports.startConversation = async (req, res) => {
         }
 
         // Create new conversation
-        const [result] = await db.execute('INSERT INTO conversations (created_at, updated_at) VALUES (GETDATE(), GETDATE())'); 
+        const [result] = await db.execute('INSERT INTO conversations (created_at, updated_at) VALUES (NOW(), NOW())'); 
         const conversationId = result.insertId;
 
-        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?), (?, ?)',
+        await db.execute('INSERT INTO conversation_participants (conversation_id, user_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW()), (?, ?, NOW(), NOW())',
             [conversationId, userId, conversationId, targetUserId]
         );
 
@@ -125,7 +125,7 @@ exports.sendMessage = async (req, res) => {
             [conversationId, req.user.id, content || null, image_url || null, media_url || null, type || 'text', reply_to_id || null]
         );
 
-        await db.execute('UPDATE conversations SET updated_at = GETDATE() WHERE id = ?', [conversationId]);
+        await db.execute('UPDATE conversations SET updated_at = NOW() WHERE id = ?', [conversationId]);
 
         const [msg] = await db.execute(`
             SELECT 
