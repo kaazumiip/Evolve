@@ -339,7 +339,7 @@ exports.googleNativeLogin = async (req, res) => {
         });
     } catch (err) {
         console.error('Google Native Login Error:', err.message);
-        res.status(401).json({ msg: 'Invalid Token' });
+        res.status(401).json({ msg: err.message });
     }
 };
 
