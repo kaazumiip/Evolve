@@ -1,8 +1,8 @@
 const { Resend } = require('resend');
 require('dotenv').config();
 
-// Initialize Resend with the API Key provided in Railway variables
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend with the API Key provided in Railway variables (lazy/optional for local dev)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 /**
  * Send OTP via Resend API (Firewall-Proof)
@@ -11,6 +11,16 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * @param {string} type - 'registration', 'password_reset', or 'password_change'
  */
 const sendOTP = async (email, otp, type = 'registration') => {
+  // If no Resend API key is provided, log to console for local testing
+  if (!resend) {
+    console.log(`\n================== [LOCAL OTP] ==================`);
+    console.log(`Recipient: ${email}`);
+    console.log(`Action:    ${type}`);
+    console.log(`OTP Code:  ${otp}`);
+    console.log(`=================================================\n`);
+    return { success: true, data: { id: 'local-dev-mock-id' } };
+  }
+
   const subject = type === 'registration' ? 'Verify your Evolve account' : 'Reset your Evolve password';
   const title = type === 'registration' ? 'Welcome to Evolve!' : 'Password Reset Request';
   const description = type === 'registration' 

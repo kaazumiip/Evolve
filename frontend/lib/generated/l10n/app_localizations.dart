@@ -503,7 +503,7 @@ abstract class AppLocalizations {
   /// No description provided for @favorites.
   ///
   /// In en, this message translates to:
-  /// **'My Favorites'**
+  /// **'Favorite'**
   String get favorites;
 
   /// No description provided for @upgradeToPremium.

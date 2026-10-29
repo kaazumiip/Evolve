@@ -38,7 +38,7 @@ exports.createSticker = async (req, res) => {
         // Save to DB
         const [result] = await db.execute(
             'INSERT INTO stickers (user_id, name, image_url, is_public) VALUES (?, ?, ?, ?)',
-            [userId, name, imageUrl, is_public === 'true' || is_public === true ? 1 : 0]
+            [userId, name, imageUrl, is_public === 'true' || is_public === true]
         );
 
         res.status(201).json({

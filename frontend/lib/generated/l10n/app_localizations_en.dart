@@ -244,7 +244,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchHub => 'Search people, tags, or posts...';
 
   @override
-  String get favorites => 'My Favorites';
+  String get favorites => 'Favorite';
 
   @override
   String get upgradeToPremium => 'Upgrade to Premium';

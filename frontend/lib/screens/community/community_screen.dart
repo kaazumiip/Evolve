@@ -289,7 +289,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Widget _buildGlowingFAB() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 80, right: 10), 
+      padding: const EdgeInsets.only(bottom: 140, right: 10), 
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),
         duration: const Duration(seconds: 2),

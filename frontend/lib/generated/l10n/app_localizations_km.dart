@@ -245,7 +245,7 @@ class AppLocalizationsKm extends AppLocalizations {
   String get searchHub => 'ស្វែងរកមនុស្ស ស្លាក ឬការបង្ហោះ...';
 
   @override
-  String get favorites => 'សំណព្វរបស់ខ្ញុំ';
+  String get favorites => 'ចំណូលចិត្ត';
 
   @override
   String get upgradeToPremium => 'ដំឡើងឡើងទៅ Premium';

@@ -1,172 +1,186 @@
-const mysql = require('mysql2/promise');
-require('dotenv').config();
-const dns = require('dns');
+const { Pool, types } = require('pg');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-// CRITICAL FIX: Force Global IPv4 DNS Lookups (Solves Railway Database AND Email ESOCKET/ENOTFOUND)
-const originalLookup = dns.lookup;
-dns.lookup = function (hostname, options, callback) {
-  if (typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-  options = options || {};
-  options.family = 4; // ALWAYS FORCE IPv4
-  return originalLookup(hostname, options, callback);
-};
+// Parse INT8 (BIGINT, e.g. COUNT(*)) as JavaScript Numbers so JSON responses match MySQL
+types.setTypeParser(20, (val) => parseInt(val, 10));
 
-// Also set the result order for newer Node environments
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder('ipv4first');
-}
-
-const config = {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   },
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  timezone: '+07:00' // Ensure MySQL dates match local time (+07:00)
-};
-
-// Use full DATABASE_URL if available (solves Railway DNS / IPv6 issues)
-const poolConnectionConfig = process.env.DATABASE_URL 
-  ? { uri: process.env.DATABASE_URL.replace('?ssl-mode=REQUIRED', ''), ssl: { rejectUnauthorized: false } }
-  : config;
-
-const pool = mysql.createPool(poolConnectionConfig);
-
-// Add a connection initialization to set timezone forcefully for each session
-pool.on('connection', (connection) => {
-    connection.query("SET time_zone = '+07:00'");
+  max: 15,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 15000,
 });
 
-/**
- * Smart SQL Translator: Converts existing MSSQL-dialect queries to MySQL
- * This ensures the application keeps running without rewriting every controller.
- */
-function translateDialect(query) {
-  let processed = query;
+// Map lowercase PG aliases back to camelCase expected by frontend/controllers
+const CAMEL_CASE_ALIASES = {
+  lastmessage: 'lastMessage',
+  lastmessagetime: 'lastMessageTime',
+  unreadcount: 'unreadCount',
+  otheruserid: 'otherUserId',
+  otherusername: 'otherUserName',
+  otheruserimage: 'otherUserImage',
+  otheruserlastseen: 'otherUserLastSeen',
+  lastmessagetype: 'lastMessageType',
+  lastmediagallery: 'lastMediaGallery',
+  sendername: 'senderName',
+  senderimage: 'senderImage',
+  replytocontent: 'replyToContent',
+  replytosendername: 'replyToSenderName',
+  username: 'userName',
+  userimage: 'userImage',
+  likecount: 'likeCount',
+  commentcount: 'commentCount',
+  isliked: 'isLiked',
+  posttitle: 'postTitle',
+  commoninterests: 'commonInterests',
+  applicantscount: 'applicantsCount',
+  quickfacts: 'quickFacts',
+  aboutprovider: 'aboutProvider',
+  providerdetails: 'providerDetails',
+  likescount: 'likesCount',
+  commentscount: 'commentsCount',
+  friendscount: 'friendsCount',
+  friendshipstatus: 'friendshipStatus',
+  requesterid: 'requesterId'
+};
 
-  // 1. Datetime conversions
-  processed = processed.replace(/SYSUTCDATETIME\(\)/gi, 'UTC_TIMESTAMP()');
-  processed = processed.replace(/GETDATE\(\)/gi, 'NOW()');
-  processed = processed.replace(/CURRENT_TIMESTAMP/gi, 'NOW()');
-  
-  // 2. Pagination: OFFSET ? ROWS FETCH NEXT ? ROWS ONLY -> LIMIT ?, ?
-  // Note: MySQL LIMIT order is (offset, count).
-  processed = processed.replace(/OFFSET\s+(\?|\d+)\s+ROWS\s+FETCH\s+NEXT\s+(\?|\d+)\s+ROWS\s+ONLY/gi, 'LIMIT $1, $2');
-
-  // 3. TOP conversion (e.g. SELECT TOP 10 * -> SELECT * ... LIMIT 10)
-  if (/SELECT\s+TOP\s+(\d+)/i.test(processed)) {
-    const limitMatch = processed.match(/SELECT\s+TOP\s+(\d+)/i);
-    const limit = limitMatch ? limitMatch[1] : '';
-    processed = processed.replace(/SELECT\s+TOP\s+(\d+)/gi, 'SELECT');
-    processed += ` LIMIT ${limit}`;
-  }
-
-  // 4. Specific streak logic: DATEADD/DATEDIFF (MSSQL) -> MySQL Equiv
-  processed = processed.replace(/DATEADD\(day, -DATEDIFF\(day, 0, NOW\(\)\) % 7, CAST\(NOW\(\) AS DATE\)\)/gi, 
-    'DATE_SUB(CURDATE(), INTERVAL (DAYOFWEEK(CURDATE()) + 5) % 7 DAY)');
-
-  // 5. NVARCHAR -> VARCHAR
-  processed = processed.replace(/NVARCHAR/gi, 'VARCHAR');
-
-  return processed;
-}
-
-/**
- * Handle Database Creation for Aiven
- */
-async function ensureDatabaseExists() {
-  // Create a temporary connection without a database name specified
-  const connection = await mysql.createConnection({
-    host: config.host,
-    port: config.port,
-    user: config.user,
-    password: config.password,
-    ssl: config.ssl
+function normalizeRows(rows) {
+  if (!Array.isArray(rows)) return rows;
+  return rows.map(row => {
+    const normalized = {};
+    for (const key of Object.keys(row)) {
+      const mappedKey = CAMEL_CASE_ALIASES[key] || key;
+      normalized[mappedKey] = row[key];
+    }
+    return normalized;
   });
-
-  try {
-    console.log(`Checking if database '${config.database}' exists...`);
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${config.database}\``);
-    console.log(`Database '${config.database}' is ready!`);
-  } catch (err) {
-    console.warn(`Could not verify/create database: ${err.message}`);
-  } finally {
-    await connection.end();
-  }
 }
 
-// Global pool instance
-let poolInstance = null;
+/**
+ * Smart SQL Translator: Converts existing MySQL / MSSQL dialect queries to PostgreSQL (Supabase)
+ */
+function translateToPostgres(query, params = []) {
+  let processed = query.trim();
+  let newParams = [...params];
 
-async function getPool() {
-  if (poolInstance) return poolInstance;
-  
-  await ensureDatabaseExists();
-  poolInstance = mysql.createPool(poolConnectionConfig); // Use the processed config
-  return poolInstance;
+  // 1. Handle INSERT IGNORE -> ON CONFLICT DO NOTHING
+  let isInsertIgnore = false;
+  if (/INSERT\s+IGNORE\s+INTO/i.test(processed)) {
+    isInsertIgnore = true;
+    processed = processed.replace(/INSERT\s+IGNORE\s+INTO/gi, 'INSERT INTO');
+  }
+
+  // 2. Datetime & Dialect functions
+  processed = processed.replace(/DATE_ADD\(UTC_TIMESTAMP\(\),\s*INTERVAL\s+7\s+HOUR\)/gi, 'NOW()');
+  processed = processed.replace(/UTC_TIMESTAMP\(\)/gi, 'NOW()');
+  processed = processed.replace(/SYSUTCDATETIME\(\)/gi, 'NOW()');
+  processed = processed.replace(/GETDATE\(\)/gi, 'NOW()');
+  processed = processed.replace(/DATEADD\(day,\s*30,\s*NOW\(\)\)/gi, "(NOW() + INTERVAL '30 days')");
+  processed = processed.replace(/DATEADD\(day,\s*30,\s*GETDATE\(\)\)/gi, "(NOW() + INTERVAL '30 days')");
+
+  // Boolean column compatibility (MySQL 0/1 -> PostgreSQL FALSE/TRUE)
+  processed = processed.replace(/\bis_read\s*=\s*1\b/gi, 'is_read = TRUE');
+  processed = processed.replace(/\bis_read\s*=\s*0\b/gi, 'is_read = FALSE');
+  processed = processed.replace(/\bis_public\s*=\s*1\b/gi, 'is_public = TRUE');
+  processed = processed.replace(/\bis_public\s*=\s*0\b/gi, 'is_public = FALSE');
+  processed = processed.replace(/\bis_edited\s*=\s*1\b/gi, 'is_edited = TRUE');
+  processed = processed.replace(/\bis_edited\s*=\s*0\b/gi, 'is_edited = FALSE');
+
+  // Weekly login date filter
+  processed = processed.replace(
+    /DATE_SUB\(CURDATE\(\),\s*INTERVAL\s*\(WEEKDAY\(CURDATE\(\)\)\)\s*DAY\)/gi,
+    "date_trunc('week', CURRENT_DATE)::date"
+  );
+  processed = processed.replace(
+    /DATE_SUB\(CURDATE\(\),\s*INTERVAL\s*\(DAYOFWEEK\(CURDATE\(\)\)\s*\+\s*5\)\s*%\s*7\s*DAY\)/gi,
+    "date_trunc('week', CURRENT_DATE)::date"
+  );
+  processed = processed.replace(
+    /DATEADD\(day,\s*-DATEDIFF\(day,\s*0,\s*NOW\(\)\)\s*%\s*7,\s*CAST\(NOW\(\)\s*AS\s*DATE\)\)/gi,
+    "date_trunc('week', CURRENT_DATE)::date"
+  );
+
+  // 3. Pagination: OFFSET ? ROWS FETCH NEXT ? ROWS ONLY -> LIMIT ? OFFSET ?
+  if (/OFFSET\s+\?\s+ROWS\s+FETCH\s+NEXT\s+\?\s+ROWS\s+ONLY/i.test(processed)) {
+    processed = processed.replace(/OFFSET\s+\?\s+ROWS\s+FETCH\s+NEXT\s+\?\s+ROWS\s+ONLY/gi, 'LIMIT ? OFFSET ?');
+    if (newParams.length >= 2) {
+      const len = newParams.length;
+      const temp = newParams[len - 2];
+      newParams[len - 2] = newParams[len - 1];
+      newParams[len - 1] = temp;
+    }
+  }
+
+  // 4. Case-insensitive search: LIKE -> ILIKE
+  processed = processed.replace(/\bLIKE\b/gi, 'ILIKE');
+
+  // 5. Replace ? with $1, $2, $3...
+  let paramIndex = 0;
+  processed = processed.replace(/\?/g, () => `$${++paramIndex}`);
+
+  // 6. Add ON CONFLICT DO NOTHING if it was INSERT IGNORE
+  if (isInsertIgnore && !/ON\s+CONFLICT/i.test(processed)) {
+    processed += ' ON CONFLICT DO NOTHING';
+  }
+
+  // 7. Add RETURNING * for INSERT statements so result.insertId works
+  const isInsert = /^INSERT\s+INTO/i.test(processed);
+  if (isInsert && !/RETURNING\b/i.test(processed)) {
+    processed += ' RETURNING *';
+  }
+
+  return { text: processed, values: newParams, isInsert };
+}
+
+async function runQuery(clientOrPool, query, params = []) {
+  const { text, values, isInsert } = translateToPostgres(query, params);
+  try {
+    const res = await clientOrPool.query(text, values);
+    const command = (res.command || '').toUpperCase();
+
+    if (command === 'SELECT') {
+      return [normalizeRows(res.rows), res.fields];
+    } else {
+      // INSERT, UPDATE, DELETE
+      const firstRow = res.rows && res.rows[0] ? res.rows[0] : null;
+      const resultHeader = {
+        insertId: firstRow && firstRow.id !== undefined ? firstRow.id : null,
+        affectedRows: res.rowCount,
+        rowCount: res.rowCount
+      };
+      return [resultHeader, res.fields];
+    }
+  } catch (err) {
+    // Map PostgreSQL unique violation (23505) so existing ER_DUP_ENTRY checks work
+    if (err.code === '23505') {
+      err.code = 'ER_DUP_ENTRY';
+    }
+    console.error('Database Query Error:', err.message, '\nSQL:', text);
+    throw err;
+  }
 }
 
 module.exports = {
+  pool,
   execute: async (query, params = []) => {
-    try {
-      const pool = await getPool();
-      const translatedQuery = translateDialect(query);
-      
-      const sanitizedParams = params;
-
-      // USE query() instead of execute() for LIMIT/OFFSET
-      // MySQL Prepared Statements (execute) can be restrictive with LIMIT parameters
-      if (translatedQuery.toUpperCase().includes('LIMIT')) {
-        const [rows, fields] = await pool.query(translatedQuery, sanitizedParams);
-        return [rows, fields];
-      }
-
-      const [rows, fields] = await pool.execute(translatedQuery, sanitizedParams);
-      return [rows, fields];
-    } catch (err) {
-      console.error('Database Query Error:', err);
-      throw err;
-    }
+    return runQuery(pool, query, params);
   },
-
   query: async (query, params = []) => {
-    return module.exports.execute(query, params);
+    return runQuery(pool, query, params);
   },
-
   getConnection: async () => {
-    const pool = await getPool();
-    const connection = await pool.getConnection();
-    
+    const client = await pool.connect();
     return {
-      beginTransaction: () => connection.beginTransaction(),
-      commit: () => connection.commit(),
-      rollback: () => connection.rollback(),
-      execute: async (query, params = []) => {
-        const translatedQuery = translateDialect(query);
-        const sanitizedParams = params;
-
-        // Use query() for LIMIT in transactions too
-        if (translatedQuery.toUpperCase().includes('LIMIT')) {
-          const [rows, fields] = await connection.query(translatedQuery, sanitizedParams);
-          return [rows, fields];
-        }
-
-        const [rows, fields] = await connection.execute(translatedQuery, sanitizedParams);
-        return [rows, fields];
-      },
-      query: async (query, params = []) => {
-        return module.exports.execute(query, params);
-      },
-      release: () => connection.release()
+      beginTransaction: () => client.query('BEGIN'),
+      commit: () => client.query('COMMIT'),
+      rollback: () => client.query('ROLLBACK'),
+      execute: (query, params = []) => runQuery(client, query, params),
+      query: (query, params = []) => runQuery(client, query, params),
+      release: () => client.release()
     };
   }
 };
