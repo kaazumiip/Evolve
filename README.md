@@ -1,4 +1,4 @@
-# 🌱 Evolve — AI-Powered Student Career, Scholarship & Personal Growth Platform
+# Evolve — AI-Powered Student Career, Scholarship & Personal Growth Platform
 
 **Evolve** is a full-stack mobile application designed to empower students in Cambodia and beyond to discover their ideal academic majors, explore personalized career roadmaps, find national and international scholarships, connect in a real-time student community hub, and track their personal growth through AI-guided reflection.
 
