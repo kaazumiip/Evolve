@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌱 Evolve — AI-Powered Student Career, Scholarship & Community Platform
+# Evolve — AI-Powered Student Career, Scholarship & Community Platform
 
 **Empowering Cambodian students to discover career paths, compare university majors, scout real-time scholarships, and grow together in an interactive student community.**
 
