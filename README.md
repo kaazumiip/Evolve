@@ -4,9 +4,9 @@
 
 ---
 
-## 📱 Complete UI Showcase
+##  Complete UI Showcase
 
-### 1. 🏠 Home & AI Career Discovery
+### 1.  Home & AI Career Discovery
 Personalized dashboard featuring AI-generated major comparisons, career path matching, interactive career roadmaps, step-by-step skill maps, daily learning streaks, and curated scholarships.
 
 | AI Major Comparison | Career Path & Streak | Career Roadmap |
@@ -19,7 +19,7 @@ Personalized dashboard featuring AI-generated major comparisons, career path mat
 
 ---
 
-### 2. 👥 Student Hub (Community) & Real-Time Messaging
+### 2.  Student Hub (Community) & Real-Time Messaging
 A collaborative social feed where students share insights, photos, videos, and tags (`#technology`, `#scholarship`, `#career`), alongside real-time direct messaging and notifications.
 
 | Student Hub (English) | Student Hub (Khmer) | Create Post |
@@ -32,7 +32,7 @@ A collaborative social feed where students share insights, photos, videos, and t
 
 ---
 
-### 3. 💡 Insight & Personal Growth Suite
+### 3.  Insight & Personal Growth Suite
 Self-discovery and mental well-being toolkit featuring daily quotes, growth analytics, a 70-question NERIS Personality Test, Vision Board, Reflection Journal, Kawaii Emoticon Express, Future Milestone Map, and **AI Mind Chat** powered by Google Gemini.
 
 | Insight Dashboard | Personal Growth Toolkit | Personality Test (NERIS) |
@@ -49,7 +49,7 @@ Self-discovery and mental well-being toolkit featuring daily quotes, growth anal
 
 ---
 
-### 4. ⭐ Favorites, Profile, Subscriptions & Localization (EN / KH)
+### 4.  Favorites, Profile, Subscriptions & Localization (EN / KH)
 Seamless bilingual support (**English** & **Khmer / ភាសាខ្មែរ**), dark/light aesthetic modes, saved scholarships & posts, account privacy controls, and subscription management.
 
 | Favorites (English) | Favorites (Khmer) | Subscription & Pricing |
@@ -62,23 +62,23 @@ Seamless bilingual support (**English** & **Khmer / ភាសាខ្មែរ*
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-- **🎯 AI Career & Major Discovery**
+- **AI Career & Major Discovery**
   - Onboarding interest & sub-interest assessment across 7 core domains (*STEM & Tech, Business, Health, Education, Craftsmanship, Public Service, Arts & Design*).
   - Side-by-side AI major & category comparison (salary ranges, market demand, work/life balance, and required skills).
   - Step-by-step career roadmaps and interactive career journey maps.
-- **🎓 Scholarship Explorer**
+- **Scholarship Explorer**
   - Filterable national and international scholarships tailored to the user's selected categories, complete with benefit breakdowns and deadlines.
-- **👥 Student Hub (Community) & Real-Time Chat**
+- **Student Hub (Community) & Real-Time Chat**
   - Create and browse posts with image/video attachments, tags, views, likes, comments, and bookmarking.
   - Real-time 1-on-1 messaging, typing indicators, and community notifications powered by **Socket.IO**.
-- **💡 Insight & Personal Growth**
+- **Insight & Personal Growth**
   - **Personality Test**: 70-question NERIS Type Explorer assessment to uncover strengths and career alignment.
   - **Vision Board & Future Map**: Visual goal setting and milestone tracking with progress percentages.
   - **Reflection Journal & Emoticon**: Daily journaling and mood/vibe expression.
   - **AI Mind Chat**: Conversational AI mentor powered by **Google Gemini** & **Groq** for personalized academic and emotional guidance.
-- **🌏 Bilingual Localization & Theme Customization**
+- **Bilingual Localization & Theme Customization**
   - Full **English (`en`)** and **Khmer (`km`)** localization (`flutter_localizations` & ARB translations).
   - Adaptive **Dark Mode** and **Light Mode** glassmorphic UI.
 
@@ -108,7 +108,7 @@ Seamless bilingual support (**English** & **Khmer / ភាសាខ្មែរ*
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 Evolve/
@@ -142,7 +142,7 @@ Evolve/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - **Flutter SDK** (`>=3.10.4`)
